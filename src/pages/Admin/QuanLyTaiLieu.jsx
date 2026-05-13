@@ -1,0 +1,285 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { fetchClient } from '../../utils/fetchClient'; // Thêm import fetchClient
+
+const QuanLyTaiLieu = () => {
+    const navigate = useNavigate();
+    const [documents, setDocuments] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const [activeTab, setActiveTab] = useState('Đang kiểm duyệt'); 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterFormat, setFilterFormat] = useState('Tất cả');
+    const [filterTag, setFilterTag] = useState('Tất cả');
+    const [danhSachNhanDan, setDanhSachNhanDan] = useState([]);
+
+    // PHÂN TRANG (Đồng bộ với Server)
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const itemsPerPage = 6; 
+
+    // Tải danh sách nhãn dán (Tags)
+    useEffect(() => {
+        const fetchNhanDan = async () => {
+            try {
+                // Sử dụng trực tiếp fetchClient
+                const res = await fetchClient('/api/nhandan');
+                if (res.ok) {
+                    const data = await res.json();
+                    setDanhSachNhanDan(data);
+                }
+            } catch (error) {
+                console.error("Lỗi tải nhãn dán:", error);
+            }
+        };
+        fetchNhanDan();
+    }, []);
+
+    const fetchDocuments = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Đẩy tất cả thông tin phân trang và bộ lọc xuống Back-end
+            const params = new URLSearchParams({
+                page: currentPage,
+                limit: itemsPerPage, 
+                search: searchTerm,
+                status: activeTab,
+                format: filterFormat === 'Tất cả' ? '' : filterFormat,
+                tag: filterTag === 'Tất cả' ? '' : filterTag
+            });
+
+            // Gọi API qua fetchClient
+            const response = await fetchClient(`/api/tailieuhoctap?${params}`);
+
+            if (response.ok) {
+                const json = await response.json();
+                setDocuments(json.data || []);
+                setTotalPages(json.totalPages || 1);
+            }
+        } catch (error) {
+            console.error("Lỗi tải dữ liệu:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentPage, searchTerm, activeTab, filterFormat, filterTag]);
+
+    useEffect(() => {
+        fetchDocuments();
+    }, [fetchDocuments]);
+
+    const handleUpdateStatus = async (id, newStatus) => {
+        let msg = "Xác nhận thực hiện thao tác này?";
+        if (newStatus === 'Hoàn thiện') msg = "Xác nhận DUYỆT tài liệu này?";
+        if (newStatus === 'Đã từ chối') msg = "Xác nhận TỪ CHỐI tài liệu này?";
+        if (newStatus === 'Đang kiểm duyệt' && activeTab === 'Hoàn thiện') msg = "Xác nhận THU HỒI tài liệu về trạng thái chờ duyệt?";
+        if (newStatus === 'Đang kiểm duyệt' && activeTab === 'Đã từ chối') msg = "Xác nhận ĐƯA LẠI tài liệu vào danh sách chờ duyệt?";
+
+        if (!window.confirm(msg)) return;
+
+        try {
+            const res = await fetchClient(`/api/tailieuhoctap/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ TrangThai: newStatus })
+            });
+            
+            if (res.ok) {
+                if (documents.length === 1 && currentPage > 1) {
+                    setCurrentPage(currentPage - 1);
+                } else {
+                    fetchDocuments();
+                }
+            } else {
+                const errData = await res.json();
+                alert(`Cập nhật thất bại: ${errData.message || "Sai trạng thái Enum"}`);
+            }
+        } catch (error) {
+            alert("Lỗi kết nối máy chủ!");
+        }
+    };
+
+    const paginate = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const getPageNumbers = () => {
+        const maxPageDisplay = 5;
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, startPage + maxPageDisplay - 1);
+        if (endPage - startPage < maxPageDisplay - 1) {
+            startPage = Math.max(1, endPage - maxPageDisplay + 1);
+        }
+        const pages = [];
+        for (let i = startPage; i <= endPage; i++) if (i > 0) pages.push(i);
+        return pages;
+    };
+
+    const handleFilterChange = (setter, value) => {
+        setter(value);
+        setCurrentPage(1); // Reset về trang 1
+    };
+
+    return (
+        <div className="container-fluid py-4">
+            <div className="mb-4">
+                <h2 className="fw-bold text-dark mb-1">Kiểm duyệt Tài liệu</h2>
+                <p className="text-muted small">Phê duyệt, thu hồi hoặc khôi phục học liệu hệ thống.</p>
+            </div>
+
+            {/* Tabs Navigation */}
+            <div className="bg-white p-2 rounded shadow-sm d-inline-flex mb-4">
+                {[
+                    { id: 'Đang kiểm duyệt', label: 'Chờ duyệt', icon: 'bi-hourglass-split', color: 'warning' },
+                    { id: 'Hoàn thiện', label: 'Đã xuất bản', icon: 'bi-check-circle', color: 'success' },
+                    { id: 'Đã từ chối', label: 'Bị từ chối', icon: 'bi-x-circle', color: 'danger' }
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        className={`nav-link border-0 px-4 py-2 rounded fw-bold transition-all ${
+                            activeTab === tab.id 
+                            ? `bg-${tab.color} ${tab.color === 'warning' ? 'text-dark' : 'text-white'}` 
+                            : 'text-muted bg-transparent'
+                        }`}
+                        onClick={() => handleFilterChange(setActiveTab, tab.id)}
+                    >
+                        <i className={`bi ${tab.icon} me-2`}></i>{tab.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Filters */}
+            <div className="card border-0 shadow-sm mb-4">
+                <div className="card-body p-3 d-flex flex-wrap gap-2">
+                    <div className="input-group flex-grow-1" style={{ minWidth: '300px' }}>
+                        <span className="input-group-text bg-transparent border-end-0"><i className="bi bi-search text-muted"></i></span>
+                        <input 
+                            type="text" 
+                            className="form-control border-start-0 bg-light shadow-none" 
+                            placeholder="Tìm tên tài liệu..." 
+                            value={searchTerm} 
+                            onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)} 
+                        />
+                    </div>
+                    <select className="form-select w-auto shadow-none bg-light" value={filterFormat} onChange={(e) => handleFilterChange(setFilterFormat, e.target.value)}>
+                        <option value="Tất cả">Mọi định dạng</option>
+                        <option value="PDF">PDF</option>
+                        <option value="VIDEO">VIDEO</option>
+                    </select>
+                    <select className="form-select w-auto shadow-none bg-light" value={filterTag} onChange={(e) => handleFilterChange(setFilterTag, e.target.value)}>
+                        <option value="Tất cả">Mọi nhãn dán</option>
+                        {danhSachNhanDan.map(tag => <option key={tag._id} value={tag.TenNhanDan}>{tag.TenNhanDan}</option>)}
+                    </select>
+                </div>
+            </div>
+
+            {/* Table */}
+            <div className="card border-0 shadow-sm overflow-hidden mb-4">
+                <div className="table-responsive">
+                    <table className="table table-hover align-middle mb-0">
+                        <thead className="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th className="ps-4 py-3">Tài liệu</th>
+                                <th className="py-3">Nhãn dán</th>
+                                <th className="py-3">Người đăng</th>
+                                <th className="pe-4 py-3 text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {isLoading ? (
+                                <tr><td colSpan="4" className="text-center py-5"><div className="spinner-border text-main-orange"></div></td></tr>
+                            ) : documents.length > 0 ? (
+                                documents.map((doc) => (
+                                    <tr key={doc._id}>
+                                        <td className="ps-4">
+                                            <div className="d-flex align-items-center">
+                                                <i className={`bi ${doc.DinhDang === 'VIDEO' ? 'bi-play-btn-fill text-danger' : 'bi-file-pdf-fill text-primary'} fs-4 me-3`}></i>
+                                                <div>
+                                                    <div className="fw-bold text-dark">{doc.TenTaiLieu}</div>
+                                                    <span className="text-muted small">{doc.DinhDang}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {doc.DanhSachNhanDan?.map((tag, i) => (
+                                                <span key={i} className="badge bg-white text-dark border me-1 fw-normal small">{tag.TenNhanDan}</span>
+                                            ))}
+                                        </td>
+                                        <td>
+                                            <div className="small fw-medium text-dark">{doc.MaGVDangTai?.HoTen || 'GV Ẩn danh'}</div>
+                                            <div className="text-muted small" style={{fontSize: '0.7rem'}}>{new Date(doc.NgayTao).toLocaleDateString('vi-VN')}</div>
+                                        </td>
+                                        <td className="pe-4 text-end">
+                                            <div className="btn-group shadow-sm">
+                                                <a href={doc.DuongDan} target="_blank" rel="noreferrer" className="btn btn-sm btn-light border text-primary" title="Xem">
+                                                    <i className="bi bi-eye"></i>
+                                                </a>
+
+                                                {activeTab === 'Đang kiểm duyệt' && (
+                                                    <>
+                                                        <button className="btn btn-sm btn-light border text-success fw-bold" onClick={() => handleUpdateStatus(doc._id, 'Hoàn thiện')}>
+                                                            <i className="bi bi-check-lg"></i> Duyệt
+                                                        </button>
+                                                        <button className="btn btn-sm btn-light border text-danger fw-bold" onClick={() => handleUpdateStatus(doc._id, 'Đã từ chối')}>
+                                                            <i className="bi bi-x-lg"></i> Từ chối
+                                                        </button>
+                                                    </>
+                                                )}
+
+                                                {activeTab === 'Hoàn thiện' && (
+                                                    <button className="btn btn-sm btn-light border text-warning fw-bold" onClick={() => handleUpdateStatus(doc._id, 'Đang kiểm duyệt')}>
+                                                        <i className="bi bi-arrow-counterclockwise"></i> Thu hồi
+                                                    </button>
+                                                )}
+
+                                                {activeTab === 'Đã từ chối' && (
+                                                    <button className="btn btn-sm btn-light border text-info fw-bold" onClick={() => handleUpdateStatus(doc._id, 'Đang kiểm duyệt')}>
+                                                        <i className="bi bi-arrow-left-right"></i> Khôi phục
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr><td colSpan="4" className="text-center py-5 text-muted">Không có dữ liệu phù hợp.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="d-flex flex-column align-items-center mt-4">
+                    <nav>
+                        <ul className="pagination shadow-sm rounded-pill overflow-hidden border-0 bg-white p-1">
+                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                <button className="page-link border-0 px-3 fw-bold text-main-orange bg-transparent" onClick={() => paginate(1)}>
+                                    <i className="bi bi-chevron-double-left"></i>
+                                </button>
+                            </li>
+                            {getPageNumbers().map(num => (
+                                <li key={num} className={`page-item ${currentPage === num ? 'active' : ''}`}>
+                                    <button 
+                                        className={`page-link border-0 px-3 mx-1 rounded-circle transition-all ${currentPage === num ? 'bg-main-orange text-white' : 'text-dark bg-transparent'}`}
+                                        onClick={() => paginate(num)}
+                                        style={currentPage === num ? { backgroundColor: '#ff6b00', fontWeight: 'bold', boxShadow: '0 4px 8px rgba(255,107,0,0.3)' } : {}}
+                                    >
+                                        {num}
+                                    </button>
+                                </li>
+                            ))}
+                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                <button className="page-link border-0 px-3 fw-bold text-main-orange bg-transparent" onClick={() => paginate(totalPages)}>
+                                    <i className="bi bi-chevron-double-right"></i>
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default QuanLyTaiLieu;

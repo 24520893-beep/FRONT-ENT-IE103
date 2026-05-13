@@ -1,0 +1,128 @@
+.pageDetail {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.questionContent {
+    font-weight: 500;
+    line-height: 1.7;
+    white-space: pre-line;
+}
+
+/* INTERACTIVE ZONE */
+.interactiveZone {
+    background-color: #fcfcfc;
+    border: 1px solid #eee;
+}
+
+.optionLabel {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: white;
+}
+
+.optionLabel:hover:not([disabled]) {
+    border-color: #fd7e14;
+    background-color: #fff8f0;
+}
+
+.optionSelected {
+    border-color: #0d6efd !important;
+    background-color: #f0f7ff !important;
+}
+
+.optionCorrect {
+    border-color: #198754 !important;
+    background-color: #e8f5e9 !important;
+    color: #198754;
+    font-weight: 600;
+}
+
+.optionWrong {
+    border-color: #dc3545 !important;
+    background-color: #fdecea !important;
+    color: #dc3545;
+}
+
+.optionCircle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.optionSelected .optionCircle {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.optionCorrect .optionCircle {
+    background-color: #198754;
+    color: white;
+}
+
+.optionWrong .optionCircle {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* AI PROMPT */
+.border-orange-dashed {
+    border: 1px dashed #fd7e14;
+}
+
+.aiPrompt {
+    background-color: #fff9f2;
+}
+
+.aiIconMini {
+    width: 40px;
+    height: 40px;
+    background: #fd7e14;
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #fd7e14;
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.feedbackArea {
+    border-top: 1px solid #eee;
+    padding-top: 24px;
+}
+
+:global(.bg-main-orange-light) {
+    background-color: rgba(253, 126, 20, 0.1);
+}
+
+:global(.text-main-orange) {
+    color: #fd7e14 !important;
+}
+
+:global(.bg-main-orange) {
+    background-color: #fd7e14 !important;
+}

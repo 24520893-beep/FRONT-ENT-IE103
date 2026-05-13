@@ -1,0 +1,67 @@
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timelineItem {
+    position: relative;
+    margin-bottom: 25px;
+    display: flex;
+}
+
+.timelineNumber {
+    position: absolute;
+    left: -28px;
+    width: 26px;
+    height: 26px;
+    background: #fff;
+    border: 2px solid #ff6b00; /* Màu cam chính */
+    color: #ff6b00;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    z-index: 2;
+}
+
+.iconBox {
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.taskCard {
+    transition: transform 0.2s;
+}
+
+.taskCard:hover {
+    transform: translateX(5px);
+}
+
+.avatarCircle {
+    width: 45px;
+    height: 45px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #dee2e6;
+}

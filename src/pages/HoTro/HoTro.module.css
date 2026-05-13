@@ -1,0 +1,98 @@
+/* ==========================================================================
+   CSS MODULE CHO TRANG HỖ TRỢ (HoTro.module.css)
+   ========================================================================== */
+
+.supportSearchSection {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+}
+
+.searchBox {
+    border: 2px solid var(--main-color);
+    background-color: white;
+}
+
+/* Sử dụng :global() để tác động vào class form-control của Bootstrap */
+.supportSearchSection :global(.form-control:focus) {
+    box-shadow: none;
+}
+
+/* =====================================
+   Cột Trái (Danh mục Menu)
+   ===================================== */
+.sidebarTitle {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: #333;
+    padding-bottom: 12px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--main-color);
+    text-transform: uppercase;
+}
+
+.sidebarList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebarList li {
+    margin-bottom: 8px;
+}
+
+.sidebarList a {
+    text-decoration: none;
+    color: #555;
+    font-size: 0.95rem;
+    display: block;
+    padding: 6px 0;
+    transition: all 0.2s ease;
+    border-left: 2px solid transparent; 
+}
+
+.sidebarList a:hover {
+    color: var(--main-color);
+    padding-left: 10px;
+    border-left-color: var(--main-color);
+    background-color: #fff8f3; 
+}
+
+/* =====================================
+   Cột Phải (Các ô hình chữ nhật)
+   ===================================== */
+.supportCard {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 100%;
+    min-height: 130px;
+    padding: 20px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    transition: all 0.3s ease;
+}
+
+.supportCard:hover {
+    border-color: var(--main-color);
+    color: var(--main-color);
+    box-shadow: 0 8px 25px rgba(255, 141, 40, 0.15);
+    transform: translateY(-5px);
+}
+
+.highlightCard {
+    background-color: #fffaf6;
+    border: 2px dashed var(--main-color);
+    color: var(--main-color);
+}
+
+.highlightCard:hover {
+    background-color: var(--main-color);
+    color: #ffffff !important;
+}

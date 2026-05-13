@@ -1,0 +1,94 @@
+/* Trừ đi chiều cao của header để không bị lẹm */
+.pageGioiThieu {
+  min-height: calc(100vh - var(--header-height-t1));
+  background-color: #ffffff;
+}
+
+/* ================= TẦNG 1 ================= */
+.tierOne {
+  background-color: #f8f9fa; /* Màu nền xám nhạt nhẹ nhàng */
+}
+
+.statCard {
+  transition: all 0.3s ease;
+  border-radius: 12px !important;
+}
+
+.statCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 25px rgba(255, 141, 40, 0.15) !important;
+}
+
+/* ================= TẦNG 2 ================= */
+.tierTwo {
+  position: relative;
+  /* Bạn cần copy 1 ảnh nền đẹp vào thư mục public/img/ của dự án */
+  background-image: url('/img/bg-about-app.jpg'); 
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed; /* Tạo hiệu ứng cuộn Parallax */
+  min-height: 500px;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(17, 24, 39, 0.8); /* Màu overlay đen mờ ánh xanh */
+}
+
+/* Nút tải App Store / Google Play */
+.appLink {
+  text-decoration: none;
+}
+
+.storeBtn {
+  background-color: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  transition: all 0.3s ease;
+}
+
+.storeBtn:hover {
+  background-color: #000000 !important;
+  border-color: var(--main-color) !important;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.storeTextSmall {
+  font-size: 0.75rem;
+  line-height: 1;
+  color: #a0a0a0;
+}
+
+.storeTextLarge {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 767.98px) {
+  .tierTwo {
+    background-attachment: scroll; /* Tắt parallax trên mobile để chống lag */
+    min-height: 400px;
+    padding: 3rem 0;
+  }
+  
+  .storeTextLarge {
+    font-size: 1.1rem;
+  }
+}
+
+/* GioiThieu.module.css */
+.pageGioiThieu + footer {
+    margin-top: 0 !important;
+}
+
+/* Đảm bảo tầng 2 không có lề dưới */
+.tierTwo {
+    margin-bottom: 0 !important;
+}

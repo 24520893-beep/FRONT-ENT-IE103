@@ -1,0 +1,90 @@
+.pageThungRac {
+    min-height: calc(100vh - var(--header-height-t1, 70px));
+    background-color: #f8f9fa;
+}
+
+/* --- FILTER CONTROL CHUẨN 48PX --- */
+.filterControl {
+    height: 48px !important;
+}
+
+.filterControl > input,
+.filterControl > select {
+    height: 100%;
+    font-size: 0.95rem;
+}
+
+.filterControl :global(.input-group-text) {
+    background-color: #fff;
+    color: #6c757d;
+}
+
+.filterControl :global(.form-control:focus),
+.filterControl > select:focus {
+    border-color: #fd7e14;
+    box-shadow: none;
+}
+
+/* --- ĐỒNG BỘ CARD TRONG THÙNG RÁC --- */
+.trashCard {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 12px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(220, 53, 69, 0.2) !important; /* Viền đỏ nhạt báo hiệu thùng rác */
+    background-color: #fffafb; /* Nền hơi ửng đỏ */
+}
+
+.trashCard:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(220, 53, 69, 0.1) !important;
+}
+
+.trashCard :global(.card-title) {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 4.5rem;
+    line-height: 1.5;
+    font-size: 1.05rem;
+}
+
+/* --- ĐỒNG BỘ PHÂN TRANG --- */
+.pageThungRac :global(.pagination) {
+    padding: 5px;
+    background: white;
+}
+
+.pageThungRac :global(.page-link) {
+    color: #555;
+    border: none;
+    padding: 8px 18px;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.pageThungRac :global(.page-link):hover {
+    background-color: #fff5ed;
+    color: #fd7e14;
+}
+
+.activePage {
+    background-color: #fd7e14 !important;
+    color: white !important;
+    font-weight: bold;
+    box-shadow: 0 3px 8px rgba(253, 126, 20, 0.3);
+}
+
+.pageThungRac :global(.page-item.disabled .page-link) {
+    background-color: transparent;
+    color: #ccc;
+}
+
+@media (max-width: 768px) {
+    .trashCard :global(.card-body) {
+        padding: 1.25rem;
+    }
+}

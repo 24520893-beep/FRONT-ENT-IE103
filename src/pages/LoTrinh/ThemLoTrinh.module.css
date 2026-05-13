@@ -1,0 +1,41 @@
+.pageTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0;
+}
+
+/* Container cho bảng thành phần */
+.tableContainer {
+  max-height: 450px;
+  overflow-y: auto;
+  background: #fff;
+}
+
+/* Cố định header của bảng khi cuộn */
+.tableContainer thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #f8f9fa;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.tableContainer tr {
+  transition: background-color 0.2s ease;
+}
+
+/* Nút điều hướng lên/xuống */
+.tableContainer .btn-light {
+  color: #6c757d;
+  border-color: transparent;
+}
+
+.tableContainer .btn-light:hover:not(:disabled) {
+  color: #0d6efd;
+  background-color: #e9ecef;
+}
+
+.tableContainer .btn-light:disabled {
+  opacity: 0.3;
+}

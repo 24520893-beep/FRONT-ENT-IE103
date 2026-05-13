@@ -1,0 +1,57 @@
+.pageProfile {
+    min-height: calc(100vh - var(--header-height-t1));
+    background-color: #f8f9fa;
+}
+
+/* Box phía trên: Tên & ID */
+.infoBox {
+    background: linear-gradient(135deg, #ffffff 0%, #fff5ed 100%);
+    border-left: 5px solid var(--main-color) !important;
+}
+
+.avatarPlaceholder {
+    font-size: 3.5rem;
+    color: var(--main-color);
+    line-height: 1;
+}
+
+/* Định dạng Input Group (Bỏ gạch giữa theo phong cách Login) */
+:global(.input-group) {
+    height: 46px;
+    transition: all 0.3s ease;
+}
+
+:global(.input-group:focus-within) {
+    box-shadow: 0 0 0 0.25rem rgba(255, 141, 40, 0.15);
+    border-radius: 0.375rem;
+}
+
+:global(.form-control:focus) {
+    box-shadow: none;
+    border-color: var(--main-color);
+}
+
+:global(.input-group:focus-within .input-group-text),
+:global(.input-group:focus-within .form-control) {
+    border-color: var(--main-color) !important;
+}
+
+/* Responsive cho điện thoại */
+@media (max-width: 767.98px) {
+    .infoBox {
+        flex-direction: column !important;
+        text-align: center;
+    }
+    
+    .infoBox div {
+        margin: 0 !important;
+    }
+
+    .avatarPlaceholder {
+        margin-bottom: 10px !important;
+    }
+
+    .pageProfile {
+        padding-top: 1rem;
+    }
+}

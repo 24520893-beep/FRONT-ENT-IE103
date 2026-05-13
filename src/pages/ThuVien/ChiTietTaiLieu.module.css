@@ -1,0 +1,52 @@
+.pageDetail {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.previewCard {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.previewBody {
+    background-color: #525659; /* Màu nền xám đậm của trình đọc PDF */
+    height: 700px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdfIframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.avatarMini {
+    width: 32px;
+    height: 32px;
+    background-color: #eee;
+    color: #fd7e14;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* Breadcrumb Styling */
+.pageDetail :global(.breadcrumb-item a) {
+    color: #fd7e14;
+    text-decoration: none;
+}
+
+.pageDetail :global(.breadcrumb-item.active) {
+    color: #6c757d;
+}
+
+@media (max-width: 992px) {
+    .previewBody {
+        height: 500px;
+    }
+}

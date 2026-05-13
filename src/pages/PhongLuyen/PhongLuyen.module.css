@@ -1,0 +1,92 @@
+.pagePhongLuyen {
+    min-height: calc(100vh - var(--header-height-t1, 70px));
+    background-color: #f8f9fa;
+}
+
+/* --- FILTER CONTROL CHUẨN 48PX --- */
+.filterControl {
+    height: 48px !important;
+}
+
+.filterControl>input,
+.filterControl>select {
+    height: 100%;
+    font-size: 0.95rem;
+}
+
+.filterControl :global(.input-group-text) {
+    background-color: #fff;
+    color: #6c757d;
+}
+
+.filterControl :global(.form-control:focus),
+.filterControl>select:focus {
+    border-color: #fd7e14;
+    box-shadow: none;
+}
+
+/* --- ĐỒNG BỘ CARD --- */
+.examCard {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 12px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.examCard:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+.examCard :global(.card-title) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 3rem;
+    line-height: 1.5;
+    font-size: 1.15rem;
+}
+
+.examCard :global(.mb-3.mt-auto) {
+    min-height: 60px;
+}
+
+/* --- ĐỒNG BỘ PHÂN TRANG --- */
+.pagePhongLuyen :global(.pagination) {
+    padding: 5px;
+    background: white;
+}
+
+.pagePhongLuyen :global(.page-link) {
+    color: #555;
+    border: none;
+    padding: 8px 18px;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.pagePhongLuyen :global(.page-link):hover {
+    background-color: #fff5ed;
+    color: #fd7e14;
+}
+
+.activePage {
+    background-color: #fd7e14 !important;
+    color: white !important;
+    font-weight: bold;
+    box-shadow: 0 3px 8px rgba(253, 126, 20, 0.3);
+}
+
+.pagePhongLuyen :global(.page-item.disabled .page-link) {
+    background-color: transparent;
+    color: #ccc;
+}
+
+@media (max-width: 768px) {
+    .examCard :global(.card-body) {
+        padding: 1.25rem;
+    }
+}

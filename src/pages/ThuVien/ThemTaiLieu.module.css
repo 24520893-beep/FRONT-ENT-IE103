@@ -1,0 +1,59 @@
+/* ThemTaiLieu.module.css */
+
+.pageTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2c3e50; 
+}
+
+/* Khu vực upload file đẹp hơn */
+.uploadArea {
+  position: relative;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  transition: all 0.3s ease-in-out;
+}
+
+.uploadArea:hover {
+  border-color: #0d6efd; 
+  background-color: #e9ecef;
+}
+
+.uploadArea input[type="file"] {
+  padding: 10px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.uploadArea input[type="file"]:focus {
+  box-shadow: none;
+}
+
+/* Custom cho nhãn dán (Tags) */
+.tagBadge {
+  background-color: #e1f0ff;
+  color: #0d6efd;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #b6d4fe;
+  transition: all 0.2s;
+}
+
+.tagBadge:hover {
+  background-color: #cfe2ff;
+  color: #084298;
+}
+
+.tagBadge i {
+  color: #6c757d;
+  transition: color 0.2s;
+}
+
+.tagBadge i:hover {
+  color: #dc3545; 
+}

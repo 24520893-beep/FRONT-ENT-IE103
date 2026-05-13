@@ -1,0 +1,167 @@
+/* ==========================================================================
+   CSS DÀNH RIÊNG CHO TRANG CHỦ (HOME PAGE)
+   ========================================================================== */
+
+/* 1. SECTION: Môn học (Subjects) */
+.listSubject {
+    border-radius: 10px;
+}
+
+/* Header danh mục: Vô hiệu hóa click trên Desktop, chỉ mở trên Mobile */
+.categoryHeader {
+    cursor: default;
+    pointer-events: none; 
+}
+
+.listSubject :global(.list-group-item) {
+    padding: 12px 20px;
+    transition: all 0.3s ease; /* Ưu tiên transition 0.3s từ block sau */
+    border-left: 4px solid transparent;
+}
+
+.listSubject :global(.list-group-item) a {
+    text-decoration: none;
+    color: #333; /* Ưu tiên màu #333 từ block sau */
+    font-weight: 500;
+    display: block;
+    transition: all 0.3s;
+}
+
+/* Hiệu ứng hover cho item môn học */
+.listSubject :global(.list-group-item):hover {
+    background-color: #fff5ed;
+    border-left: 4px solid var(--main-color);
+}
+
+.listSubject :global(.list-group-item):hover a {
+    color: var(--main-color); /* Hoặc #fd7e14 tùy theo biến của bạn */
+    padding-left: 5px;
+}
+
+/* 2. SECTION: Banner Carousel */
+.promoCarousel {
+    min-height: 380px;
+    cursor: grab;
+    user-select: none;
+    touch-action: pan-y; 
+}
+
+.promoCarousel:active {
+    cursor: grabbing;
+}
+
+.promoImg {
+    height: 400px; 
+    object-fit: cover; 
+    width: 100%;
+}
+
+.promoCarousel :global(.carousel-caption) {
+    z-index: 10;
+    bottom: 20px;
+}
+
+/* 3. SECTION: Tải App (App Buttons) */
+.appBtn {
+    background-color: #222 !important;
+    border: none;
+    transition: transform 0.2s ease;
+    color: white;
+}
+
+.appBtn:hover {
+    transform: translateY(-3px);
+    background-color: #000 !important;
+}
+
+/* 4. SECTION: Lộ Trình Học Tập (Roadmap Cards) */
+.sectionTitle {
+    font-weight: bold;
+    border-left: 4px solid var(--main-color);
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.hoverCardRoadmap {
+    display: flex;
+    flex-direction: column;
+    height: 100%; 
+    transition: all 0.3s ease;
+    border-radius: 15px !important;
+    overflow: hidden;
+}
+
+.hoverCardRoadmap :global(.card-body) {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto; 
+}
+
+.hoverCardRoadmap :global(.card-title) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2; 
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 3rem; 
+    line-height: 1.5rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+
+.teacherName {
+    color: #666;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.roadmapImg {
+    height: 160px;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+    width: 100%;
+}
+
+.hoverCardRoadmap:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 25px rgba(255, 141, 40, 0.2) !important;
+}
+
+.hoverCardRoadmap:hover .roadmapImg {
+    transform: scale(1.1);
+}
+
+/* ==========================================================================
+   5. RESPONSIVE (CONSOLIDATED)
+   ========================================================================== */
+
+/* Tablet (Dưới 992px) */
+@media (max-width: 991.98px) {
+    .promoCarousel, .promoImg {
+        min-height: 250px;
+        height: 250px;
+    }
+}
+
+/* Mobile (Dưới 768px) */
+@media (max-width: 767.98px) {
+    /* Header danh mục cho phép click trên mobile */
+    .categoryHeader {
+        cursor: pointer;
+        pointer-events: auto; 
+    }
+
+    .promoImg {
+        height: 220px;
+    }
+    
+    .hoverCardRoadmap {
+        width: 100%; 
+        height: 400px; /* Ép chiều cao cố định cho mobile */
+    }
+    
+    .roadmapImg {
+        height: 180px; 
+    }
+}

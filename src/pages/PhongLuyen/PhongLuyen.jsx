@@ -1,0 +1,286 @@
+// File: src/pages/PhongLuyen/PhongLuyen.jsx
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import styles from './PhongLuyen.module.css';
+import { fetchClient } from '../../utils/fetchClient';
+
+const PhongLuyen = () => {
+  const navigate = useNavigate();
+  const [userRole, setUserRole] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  const [exams, setExams] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const examsPerPage = 12;
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('Tất cả');
+  const [filterStatus, setFilterStatus] = useState('Tất cả');
+
+  const fetchExams = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const queryParams = new URLSearchParams({
+        page: currentPage,
+        limit: examsPerPage,
+        search: searchTerm,
+      });
+      
+      if (selectedSubject !== 'Tất cả') queryParams.append('subject', selectedSubject);
+      if (filterStatus !== 'Tất cả') queryParams.append('status', filterStatus);
+
+      // Gọi API qua fetchClient - Back-end sẽ trả về dữ liệu đã sắp xếp ưu tiên
+      const response = await fetchClient(`/api/dethithu?${queryParams.toString()}`);
+
+      if (response.ok) {
+        const json = await response.json();
+        setExams(json.data || []);
+        setTotalPages(json.totalPages || 1);
+        setTotalItems(json.totalItems || 0);
+      }
+    } catch (error) {
+      console.error("Lỗi kết nối API:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, searchTerm, selectedSubject, filterStatus]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      const userObj = JSON.parse(savedUser);
+      setUserRole(userObj.VaiTro || '');
+      setCurrentUserId(userObj._id);
+    }
+    fetchExams();
+  }, [fetchExams]);
+
+  const handleDeleteExam = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa đề thi này không?")) return;
+    try {
+      // Đã sửa: Dùng fetchClient cho chức năng xóa
+      const response = await fetchClient(`/api/dethithu/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        alert("Xóa đề thi thành công!");
+        fetchExams();
+      } else {
+        const errorData = await response.json();
+        alert(`Lỗi: ${errorData.message || 'Không thể xóa đề thi'}`);
+      }
+    } catch (error) { 
+      console.error("Lỗi khi xóa đề thi:", error); 
+    }
+  };
+
+  const handleFilterChange = (setter, value) => {
+    setter(value);
+    setCurrentPage(1);
+  };
+
+  const getPageNumbers = () => {
+    const maxPageDisplay = 5;
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + maxPageDisplay - 1);
+    if (endPage - startPage < maxPageDisplay - 1) {
+      startPage = Math.max(1, endPage - maxPageDisplay + 1);
+    }
+    const pages = [];
+    for (let i = startPage; i <= endPage; i++) {
+      if (i > 0) pages.push(i);
+    }
+    return pages;
+  };
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const getStatusBadge = (status) => {
+    if (status === 'Đã xuất bản' || status === 'Hoàn thiện') return 'bg-success text-white';
+    if (status === 'Đã từ chối' || status === 'Từ chối') return 'bg-danger text-white';
+    return 'bg-warning text-dark'; 
+  };
+
+  return (
+    <main className={styles.pagePhongLuyen}>
+      <section className="bg-light py-4 border-bottom shadow-sm">
+        <div className="container">
+          <div className="row align-items-center mb-4">
+            <div className="col-md-8">
+              <h2 className="fw-bold mb-0">Phòng Luyện Thi</h2>
+              <p className="text-muted mb-0 mt-2 fs-6">Hệ thống đề thi THPT Quốc gia bám sát cấu trúc mới.</p>
+            </div>
+            
+            {(userRole === 'GiaoVien' || userRole === 'QuanTriVien') && (
+              <div className="col-md-4 text-md-end mt-3 mt-md-0">
+                <button 
+                  className="btn btn-main-orange text-white fw-bold shadow-sm"
+                  onClick={() => navigate('/them-de-thi')}
+                >
+                  <i className="bi bi-cloud-arrow-up-fill me-2"></i>Thêm đề thi mới
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="row g-2">
+            <div className="col-12 col-md-3">
+              <select className={`form-select shadow-none ${styles.filterControl}`} value={selectedSubject} onChange={(e) => handleFilterChange(setSelectedSubject, e.target.value)}>
+                <option value="Tất cả">Tất cả môn thi</option>
+                <option value="Toán học">Toán học</option>
+                <option value="Vật lý">Vật lý</option>
+                <option value="Hóa học">Hóa học</option>
+                <option value="Ngữ văn">Ngữ văn</option>
+                <option value="Địa lý">Địa lý</option>
+                <option value="Lịch sử">Lịch sử</option>
+              </select>
+            </div>
+
+            {(userRole === 'GiaoVien' || userRole === 'QuanTriVien') && (
+                <div className="col-12 col-md-3">
+                  <select className={`form-select shadow-none ${styles.filterControl}`} value={filterStatus} onChange={(e) => handleFilterChange(setFilterStatus, e.target.value)}>
+                    <option value="Tất cả">Trạng thái: Tất cả</option>
+                    <option value="Hoàn thiện">Đã xuất bản / Hoàn thiện</option>
+                    <option value="Đang kiểm duyệt">Đang kiểm duyệt</option>
+                    <option value="Từ chối">Bị từ chối</option>
+                  </select>
+                </div>
+            )}
+
+            <div className={`col-12 ${userRole === 'GiaoVien' || userRole === 'QuanTriVien' ? 'col-md-6' : 'col-md-9'}`}>
+              <div className={`input-group shadow-sm ${styles.filterControl}`}>
+                <span className="input-group-text bg-white text-muted border-end-0"><i className="bi bi-search"></i></span>
+                <input type="text" className="form-control shadow-none border-start-0 ps-0" placeholder="Tìm kiếm tên đề thi bạn muốn luyện tập..." value={searchTerm} onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-5 bg-light min-vh-100">
+        <div className="container">
+          {isLoading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-main-orange" role="status"></div>
+              <p className="mt-2 text-muted small">Đang tải dữ liệu từ máy chủ...</p>
+            </div>
+          ) : (
+            <>
+              <div className="row g-4 mb-5">
+                {exams.length > 0 ? (
+                  exams.map((exam) => (
+                    <div key={exam._id} className="col-12 col-md-6 col-xl-4 d-flex">
+                      <div className={`card w-100 border-0 shadow-sm ${styles.examCard}`}>
+                        <div className="card-body p-4 d-flex flex-column">
+                          
+                          <div className="d-flex align-items-center justify-content-between mb-3">
+                            <span className="badge bg-main-orange px-3 py-2 fw-normal">{exam.MonHoc}</span>
+                            {(userRole === 'GiaoVien' || userRole === 'QuanTriVien') && exam.TrangThai && (
+                                <span className={`badge border ${getStatusBadge(exam.TrangThai)}`}>{exam.TrangThai}</span>
+                            )}
+                          </div>
+
+                          <h5 className="card-title fw-bold text-dark mb-3 lh-base">{exam.TenDeThi}</h5>
+
+                          <div className="mb-3 mt-auto">
+                            {exam.DanhSachNhanDan?.map((tag, i) => (
+                              <span key={i} className="badge bg-light text-dark border me-2 fw-normal mb-1">
+                                <i className="bi bi-tag-fill text-muted me-1"></i>{tag.TenNhanDan}
+                              </span>
+                            ))}
+                          </div>
+
+                          <div className="row g-2 text-muted small mb-4">
+                            <div className="col-6">
+                              <i className="bi bi-stopwatch text-main-orange me-2"></i>
+                              <span className="fw-medium">{exam.ThoiGianGioiHan} phút</span>
+                            </div>
+                            <div className="col-6">
+                              <i className="bi bi-list-task text-main-orange me-2"></i>
+                              <span className="fw-medium">{exam.DanhSachCauHoi?.length || 0} câu</span>
+                            </div>
+                          </div>
+
+                          <hr className="my-0 mb-3 opacity-10" />
+                          
+                          {/* KHU VỰC NÚT BẤM (CẬP NHẬT) */}
+                          <div className="d-flex gap-2">
+                            <Link to={`/phong-luyen/${exam._id}`} className="btn btn-outline-main-orange flex-grow-1 fw-bold">
+                              {userRole === 'HocSinh' ? 'Vào thi ngay' : 'Xem chi tiết'}
+                            </Link>
+
+                            {/* CHỈ NGƯỜI TẠO MỚI THẤY NÚT SỬA VÀ XÓA */}
+                            {currentUserId === (exam.MaGVThietKe?._id || exam.MaGVThietKe) && (
+                              <>
+                                <button 
+                                  className="btn btn-outline-dark px-3 flex-shrink-0"
+                                  onClick={() => navigate(`/them-de-thi?edit=${exam._id}`)}
+                                  title="Sửa đề thi"
+                                >
+                                  <i className="bi bi-pencil-square"></i>
+                                </button>
+                                <button 
+                                  className="btn btn-outline-danger px-3 flex-shrink-0"
+                                  onClick={() => handleDeleteExam(exam._id)}
+                                  title="Xóa đề thi này"
+                                >
+                                  <i className="bi bi-trash3-fill"></i>
+                                </button>
+                              </>
+                            )}
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-12 text-center py-5">
+                    <i className="bi bi-folder-x text-muted opacity-25 d-block mb-3" style={{ fontSize: '4rem' }}></i>
+                    <h5 className="text-muted">Không tìm thấy đề thi nào trên máy chủ.</h5>
+                  </div>
+                )}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="d-flex justify-content-center">
+                  <nav aria-label="Page navigation">
+                    <ul className="pagination mb-0 shadow-sm rounded-pill overflow-hidden border-0">
+                      <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link border-0 px-3 fw-bold" onClick={() => paginate(1)}>Đầu</button>
+                      </li>
+                      <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link border-0 px-3" onClick={() => paginate(currentPage - 1)}>Trước</button>
+                      </li>
+                      {getPageNumbers().map((number) => (
+                        <li key={number} className={`page-item ${currentPage === number ? 'active' : ''}`}>
+                          <button className={`page-link border-0 px-3 ${currentPage === number ? styles.activePage : ''}`} onClick={() => paginate(number)}>{number}</button>
+                        </li>
+                      ))}
+                      <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                        <button className="page-link border-0 px-3" onClick={() => paginate(currentPage + 1)}>Sau</button>
+                      </li>
+                      <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                        <button className="page-link border-0 px-3 fw-bold" onClick={() => paginate(totalPages)}>Cuối</button>
+                      </li>
+                    </ul>
+                  </nav>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+};
+
+export default PhongLuyen;

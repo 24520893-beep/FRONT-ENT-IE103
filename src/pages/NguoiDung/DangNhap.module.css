@@ -1,0 +1,115 @@
+/* ==========================================
+   TRANG ĐĂNG NHẬP (LOGIN PAGE) - RESPONSIVE UPDATE
+   ========================================== */
+
+.pageLogin {
+  /* Căn giữa màn hình dựa trên chiều cao header t1 từ biến toàn cục */
+  min-height: calc(100vh - var(--header-height-t1));
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa; /* Nền nhạt theo thiết kế global */
+}
+
+.loginCard {
+  border-radius: 1rem; /* Khớp với yêu cầu .page-login .card */
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05) !important;
+}
+
+.orangeText {
+  color: var(--main-color) !important;
+}
+
+/* --- Xử lý ô Input có icon (Input Group) --- */
+.loginInputGroup {
+  height: 50px;
+}
+
+.loginInputGroup :global(.input-group-text) {
+  border-right: none !important; /* Bỏ đường kẻ phải của icon */
+  background-color: #fff !important;
+}
+
+.loginInputGroup :global(.form-control) {
+  border-left: none !important; /* Bỏ đường kẻ trái của ô input */
+}
+
+/* Ẩn outline mặc định của bootstrap khi click */
+.loginInputGroup :global(.form-control:focus) {
+  box-shadow: none;
+  border-color: #dee2e6;
+}
+
+/* Hiệu ứng viền màu cam khi focus vào toàn bộ cụm input */
+.loginInputGroup:focus-within {
+  border-color: var(--main-color) !important;
+  box-shadow: 0 0 0 0.25rem rgba(255, 141, 40, 0.25) !important;
+  border-radius: 0.375rem;
+}
+
+.loginInputGroup:focus-within :global(.input-group-text),
+.loginInputGroup:focus-within :global(.form-control) {
+  border-color: var(--main-color) !important;
+}
+
+/* --- Nút mạng xã hội (Social Buttons) --- */
+.btnSocial {
+  position: relative;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  transition: all 0.3s ease;
+  height: 100%; /* Đảm bảo các nút cao bằng nhau trên cùng một hàng */
+  white-space: nowrap; /* Ưu tiên giữ chữ trên 1 dòng */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff !important;
+  border: 1px solid #dee2e6 !important;
+}
+
+.btnSocial span {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Màu sắc & Hover theo từng option */
+.btnFb { color: #0d6efd !important; border-color: #0d6efd !important; }
+.btnFb:hover { background-color: #0d6efd !important; color: #ffffff !important; }
+
+.btnApple { color: #212529 !important; border-color: #212529 !important; }
+.btnApple:hover { background-color: #212529 !important; color: #ffffff !important; }
+
+.btnGoogle { color: #dc3545 !important; border-color: #dc3545 !important; }
+.btnGoogle:hover { background-color: #dc3545 !important; color: #ffffff !important; }
+
+.btnPhone { color: #198754 !important; border-color: #198754 !important; }
+.btnPhone:hover { background-color: #198754 !important; color: #ffffff !important; }
+
+/* --- RESPONSIVE LOGIC (THEO MÃ CSS BẠN CUNG CẤP) --- */
+
+/* 1. Mặc định cho Desktop rộng (>1200px) */
+.btnSocial {
+  font-size: 0.9rem;
+  padding: 0.75rem 0.5rem;
+}
+
+/* 2. Cho Tablet hoặc Desktop nhỏ (768px - 1200px) */
+@media (min-width: 768px) and (max-width: 1200px) {
+  .btnSocial {
+    font-size: 0.8rem; /* Chữ co lại nhẹ để vừa 2 cột */
+  }
+}
+
+/* 3. Cho Mobile (< 768px) */
+@media (max-width: 767.98px) {
+  .pageLogin {
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+  
+  .btnSocial {
+    font-size: 1rem; /* Chữ hiển thị thoải mái khi về 1 cột */
+    padding: 0.8rem 1rem;
+  }
+}

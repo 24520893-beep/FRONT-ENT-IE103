@@ -1,0 +1,12 @@
+.pageTitle {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0;
+}
+
+/* Tùy chỉnh nhẹ cho ô input để khi focus nhìn đồng bộ với theme hệ thống */
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
