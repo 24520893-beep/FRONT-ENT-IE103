@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
 import styles from './ThemTaiLieu.module.css';
-import { fetchClient } from '../../utils/fetchClient'; // Bổ sung import fetchClient
+import { fetchClient } from '../../utils/fetchClient'; 
 
 const ThemTaiLieu = () => {
   const navigate = useNavigate();
@@ -44,7 +44,6 @@ const ThemTaiLieu = () => {
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        // Đã sửa: Dùng fetchClient để lấy danh sách nhãn dán
         const res = await fetchClient('/api/nhandan');
         if (res.ok) {
           const jsonResponse = await res.json();
@@ -61,7 +60,6 @@ const ThemTaiLieu = () => {
     const fetchOldData = async () => {
       if (!isEditMode) return;
       try {
-        // Đã sửa: Dùng fetchClient để lấy thông tin tài liệu cũ
         const res = await fetchClient(`/api/tailieuhoctap/${editId}`);
         if (res.ok) {
           const data = await res.json();
@@ -107,7 +105,6 @@ const ThemTaiLieu = () => {
 
       let newTagIds = [];
       if (tagsToCreate.length > 0) {
-        // Đã sửa: Dùng fetchClient để tạo nhãn mới
         const createTagPromises = tagsToCreate.map(tag =>
           fetchClient('/api/nhandan', {
             method: 'POST',
@@ -118,27 +115,42 @@ const ThemTaiLieu = () => {
         newTagIds = createdTags.map(tag => tag._id);
       }
 
-      // LUÔN RESET TRẠNG THÁI VỀ "Đang kiểm duyệt" DÙ LÀ TẠO MỚI HAY CẬP NHẬT
-      const payload = {
-        TenTaiLieu: docName,
-        DinhDang: format,
-        DanhSachNhanDan: [...existingTagIds, ...newTagIds],
-        TrangThai: "Đang kiểm duyệt" 
-      };
+      // CHUYỂN ĐỔI SANG FORMDATA
+      const formData = new FormData();
+      formData.append('TenTaiLieu', docName);
+      formData.append('DinhDang', format);
+      formData.append('TrangThai', 'Đang kiểm duyệt');
+
+      // Mảng phải stringify trước khi append vào FormData
+      const allTags = [...existingTagIds, ...newTagIds];
+      if (allTags.length > 0) {
+        formData.append('DanhSachNhanDan', JSON.stringify(allTags));
+      }
+
+      // Lấy file từ input
+      const fileInput = document.getElementById('fileUpload');
+      if (fileInput && fileInput.files.length > 0) {
+        formData.append('fileUpload', fileInput.files[0]);
+      } else if (!isEditMode) {
+        // Cảnh báo nếu tạo mới mà không up file
+        alert("Vui lòng tải lên một tệp tài liệu!");
+        setIsLoadingTags(false);
+        return;
+      }
 
       // Xác định endpoint và method dựa trên mode
       const url = isEditMode ? `/api/tailieuhoctap/${editId}` : '/api/tailieuhoctap';
       const method = isEditMode ? 'PUT' : 'POST';
 
-      // Đã sửa: Dùng fetchClient gửi payload
+      // Gọi API qua fetchClient. FormData được truyền thẳng vào body
       const resDoc = await fetchClient(url, {
         method: method,
-        body: JSON.stringify(payload)
+        body: formData 
       });
 
       if (resDoc.ok) {
         alert(`Đã ${isEditMode ? 'cập nhật' : 'tạo mới'} tài liệu thành công! Trạng thái: Chờ duyệt.`);
-        navigate('/thu-vien'); // Chuyển về thư viện sau khi xong
+        navigate('/thu-vien'); 
       } else {
         const errorData = await resDoc.json();
         alert(`Lỗi khi ${isEditMode ? 'cập nhật' : 'tạo'} tài liệu: ` + (errorData.message || errorData.error));
@@ -215,14 +227,13 @@ const ThemTaiLieu = () => {
                 >
                   <option value="">Chọn định dạng</option>
                   <option value="PDF">PDF</option>
-                  <option value="MP3">MP3</option>
                   <option value="MP4">MP4</option>
                 </select>
               </div>
               <div className="col-md-6 mt-3 mt-md-0">
                 <label className="form-label fw-bold">Thêm tài liệu (Tùy chọn tải file mới)</label>
                 <div className={styles.uploadArea}>
-                  <input type="file" className="form-control" id="fileUpload" />
+                  <input type="file" className="form-control" id="fileUpload" accept=".pdf,audio/mp3,video/mp4" />
                 </div>
                 {isEditMode && <small className="text-muted mt-1 d-block">Bỏ trống nếu muốn giữ nguyên file cũ.</small>}
               </div>

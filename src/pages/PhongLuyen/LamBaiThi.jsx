@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from '../ThuVien/ChiTietCauHoi';
-import { fetchClient } from '../../utils/fetchClient'; // Bổ sung import fetchClient
+import { fetchClient } from '../../utils/fetchClient'; 
 
 const LamBaiThi = () => {
     const { id } = useParams();
@@ -14,7 +14,7 @@ const LamBaiThi = () => {
 
     // QUẢN LÝ THỜI GIAN VÀ ĐÁP ÁN
     const [timeLeft, setTimeLeft] = useState(null);
-    const [isTimeUp, setIsTimeUp] = useState(false); // Thêm cờ nhận diện hết giờ để tránh Stale state
+    const [isTimeUp, setIsTimeUp] = useState(false); 
     const [answers, setAnswers] = useState({});
 
     // 1. FETCH DỮ LIỆU ĐỀ THI & LẤY QUYỀN USER
@@ -26,25 +26,19 @@ const LamBaiThi = () => {
 
         const fetchExam = async () => {
             try {
-                // Đã sửa: Dùng fetchClient để lấy dữ liệu đề thi
                 const res = await fetchClient(`/api/dethithu/${id}`);
                 
                 if (res.ok) {
                     const data = await res.json();
                     setExam(data);
 
-                    // ==========================================
-                    // BẢN VÁ LỖI BẢO MẬT: CHỐNG HACK THỜI GIAN
-                    // ==========================================
                     const examKey = `exam_${id}_endTime`;
                     const savedEndTime = sessionStorage.getItem(examKey);
                     const now = new Date().getTime();
 
                     if (savedEndTime && parseInt(savedEndTime) > now) {
-                        // Nếu đã đang làm bài, tính số giây còn lại dựa trên mốc kết thúc
                         setTimeLeft(Math.floor((parseInt(savedEndTime) - now) / 1000));
                     } else {
-                        // Nếu mới bắt đầu làm, thiết lập mốc kết thúc mới và lưu vào sessionStorage
                         const timeInSeconds = data.ThoiGianGioiHan * 60;
                         setTimeLeft(timeInSeconds);
                         sessionStorage.setItem(examKey, now + timeInSeconds * 1000);
@@ -62,12 +56,12 @@ const LamBaiThi = () => {
         fetchExam();
     }, [id, navigate]);
 
-    // 2. ĐỒNG HỒ ĐẾM NGƯỢC (CHỈ CHẠY CHO HỌC SINH)
+    // 2. ĐỒNG HỒ ĐẾM NGƯỢC
     useEffect(() => {
         if (userRole !== 'HocSinh' || timeLeft === null || isSubmitting || isTimeUp) return;
 
         if (timeLeft <= 0) {
-            setIsTimeUp(true); // Bật cờ hết giờ thay vì gọi thẳng handleSubmit để tránh Stale state
+            setIsTimeUp(true); 
             return;
         }
 
@@ -78,14 +72,13 @@ const LamBaiThi = () => {
         return () => clearInterval(timer);
     }, [timeLeft, isSubmitting, userRole, isTimeUp]);
 
-    // Lắng nghe sự kiện hết giờ để tự động nộp bài
     useEffect(() => {
         if (isTimeUp && !isSubmitting) {
             alert("Đã hết thời gian làm bài! Hệ thống tự động thu bài của bạn.");
             handleSubmit(true);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isTimeUp]); // Chỉ trigger khi isTimeUp thay đổi, closure lúc này sẽ chứa toàn bộ state mới nhất
+    }, [isTimeUp]); 
 
     const formatTime = (seconds) => {
         const h = Math.floor(seconds / 3600);
@@ -95,7 +88,7 @@ const LamBaiThi = () => {
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    // 3. XỬ LÝ LƯU ĐÁP ÁN (FRONT-END)
+    // 3. XỬ LÝ LƯU ĐÁP ÁN
     const handleAnswerChange = (qId, value) => {
         setAnswers(prev => ({ ...prev, [qId]: value }));
     };
@@ -123,7 +116,6 @@ const LamBaiThi = () => {
 
     // 4. LOGIC NỘP BÀI THI & CHẤM ĐIỂM
     const handleSubmit = async (isAutoSubmit = false) => {
-        // Nếu tự nộp do hết giờ thì không hỏi lại
         if (!isAutoSubmit && timeLeft > 0 && !window.confirm("Bạn có chắc chắn muốn nộp bài? Câu hỏi chưa làm sẽ bị tính là sai!")) {
             return;
         }
@@ -160,7 +152,7 @@ const LamBaiThi = () => {
                 if (tuLuanObj.imageBase64) {
                     luaChon += `\n[Có đính kèm file: ${tuLuanObj.fileName}]`;
                 }
-                isCorrect = false; // Tự luận đợi GV chấm
+                isCorrect = false; 
             }
 
             return {
@@ -170,7 +162,6 @@ const LamBaiThi = () => {
             };
         });
 
-        // Tính điểm phần tự động chấm
         const autoGradable = exam.DanhSachCauHoi.filter(q => q.LoaiCauHoi !== 'TuLuan');
         const correctCount = chiTietBaiLam.filter(c => {
             const q = exam.DanhSachCauHoi.find(x => x._id === c.MaCauHoi);
@@ -180,7 +171,6 @@ const LamBaiThi = () => {
         const diemSo = autoGradable.length > 0 ? Number(((correctCount / autoGradable.length) * 10).toFixed(2)) : 0;
 
         try {
-            // Đã sửa: Dùng fetchClient để nộp bài
             const res = await fetchClient('/api/ketquathithu', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -191,9 +181,7 @@ const LamBaiThi = () => {
             });
 
             if (res.ok) {
-                // Xóa session lưu trữ thời gian sau khi nộp thành công
                 sessionStorage.removeItem(`exam_${id}_endTime`);
-                
                 alert(`Nộp bài thành công! Điểm hệ thống tự chấm: ${diemSo}/10`);
                 navigate('/phong-luyen'); 
             } else {
@@ -222,7 +210,6 @@ const LamBaiThi = () => {
                     </h5>
                     
                     <div className="d-flex align-items-center gap-4">
-                        {/* HIỂN THỊ ĐỒNG HỒ & NÚT NỘP NẾU LÀ HỌC SINH */}
                         {userRole === 'HocSinh' ? (
                             <>
                                 <div className={`fs-5 fw-bold ${timeLeft <= 300 ? 'text-danger animate__animated animate__flash animate__infinite' : 'text-primary'}`}>
@@ -238,7 +225,6 @@ const LamBaiThi = () => {
                                 </button>
                             </>
                         ) : (
-                            /* GIAO DIỆN XEM TRƯỚC CHO GIÁO VIÊN/ADMIN */
                             <span className="badge bg-secondary px-3 py-2 fs-6">
                                 <i className="bi bi-eye me-2"></i>Chế độ xem trước
                             </span>
@@ -261,9 +247,21 @@ const LamBaiThi = () => {
                                     </span>
                                 </div>
                                 
-                                <div className="fs-5 text-dark mb-4 lh-base" style={{ whiteSpace: 'pre-line' }}>
+                                <div className="fs-5 text-dark mb-3 lh-base" style={{ whiteSpace: 'pre-line' }}>
                                     {q.NoiDungCauHoi}
                                 </div>
+
+                                {/* HIỂN THỊ ẢNH MINH HỌA NẾU CÓ */}
+                                {q.HinhAnhMinhHoa && (
+                                    <div className="mb-4 text-center">
+                                        <img 
+                                            src={q.HinhAnhMinhHoa} 
+                                            alt={`Minh họa câu ${idx + 1}`} 
+                                            className="img-fluid rounded shadow-sm border" 
+                                            style={{ maxHeight: '400px', objectFit: 'contain' }} 
+                                        />
+                                    </div>
+                                )}
 
                                 {/* 1. TRẮC NGHIỆM */}
                                 {q.LoaiCauHoi === 'TracNghiem' && (

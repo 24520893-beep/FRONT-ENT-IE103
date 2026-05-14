@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './ThongTinCaNhan.module.css';
-import { fetchClient } from '../../utils/fetchClient'; // Bổ sung import fetchClient
+import { fetchClient } from '../../utils/fetchClient'; 
 
 const ThongTinCaNhan = () => {
   const [userData, setUserData] = useState(null);
@@ -8,18 +8,26 @@ const ThongTinCaNhan = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
 
+  // STATE QUẢN LÝ ẢNH ĐẠI DIỆN
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  // Thêm state riêng cho lỗi ảnh để hiển thị tại chỗ
+  const [avatarError, setAvatarError] = useState('');
+
   useEffect(() => {
     fetchUserInfo();
   }, []);
 
   const fetchUserInfo = async () => {
     try {
-      // Đã sửa: Sử dụng fetchClient, không cần truyền token và cấu hình Header thủ công
       const response = await fetchClient('/api/nguoidung/me');
       const data = await response.json();
       
       if (response.ok) {
         setUserData(data);
+        if (data.Avatar) {
+          setAvatarPreview(data.Avatar);
+        }
       }
     } catch (err) {
       console.error("Lỗi tải thông tin:", err);
@@ -28,29 +36,58 @@ const ThongTinCaNhan = () => {
     }
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    setAvatarError(''); // Reset lỗi mỗi lần chọn lại
+
+    if (file) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        setAvatarError('⚠️ File vượt quá 10MB');
+        e.target.value = ""; // Reset input
+        return;
+      }
+
+      setAvatarFile(file); 
+      setAvatarPreview(URL.createObjectURL(file)); 
+    }
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (avatarError) return; // Chặn nếu đang có lỗi ảnh
+
     setIsUpdating(true);
+    setMessage({ type: '', content: '' });
 
     try {
-      // Đã sửa: Dùng fetchClient để gọi API cập nhật thông tin
+      const formData = new FormData();
+      formData.append('HoTen', userData.HoTen);
+      formData.append('Email', userData.Email);
+
+      if (userData.VaiTro === 'HocSinh') {
+        if (userData.DiemKyVong) formData.append('DiemKyVong', userData.DiemKyVong);
+        if (userData.KhoiThi) formData.append('KhoiThi', userData.KhoiThi);
+        if (userData.TruongKyVong) formData.append('TruongKyVong', userData.TruongKyVong);
+      }
+
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
+
       const response = await fetchClient(`/api/nguoidung/${userData._id}`, {
         method: 'PUT',
-        body: JSON.stringify({
-          HoTen: userData.HoTen,
-          Email: userData.Email,
-          // Học sinh có thể sửa các trường này
-          DiemKyVong: userData.DiemKyVong,
-          KhoiThi: userData.KhoiThi,
-          TruongKyVong: userData.TruongKyVong,
-          // Giáo viên gửi giá trị hiện có (không cho sửa trên giao diện)
-          MonHoc: userData.MonHoc
-        })
+        body: formData 
       });
 
       const data = await response.json();
+      
       if (response.ok) {
         localStorage.setItem('user', JSON.stringify(data));
+        setUserData(data);
+        if (data.Avatar) {
+           setAvatarPreview(data.Avatar);
+        }
         setMessage({ type: 'success', content: 'Cập nhật thông tin thành công!' });
       } else {
         setMessage({ type: 'danger', content: data.message || 'Lỗi cập nhật' });
@@ -80,9 +117,53 @@ const ThongTinCaNhan = () => {
         <div className="row justify-content-center">
           <div className="col-12 col-md-10 col-lg-8">
 
-            {/* BOX TỔNG QUAN */}
-            <div className={`${styles.infoBox} card shadow-sm border-0 mb-4 p-4 d-flex flex-row align-items-center`}>
-              <div className={styles.avatarPlaceholder}><i className="bi bi-person-circle"></i></div>
+            {/* BOX TỔNG QUAN & AVATAR */}
+            <div className={`${styles.infoBox} card shadow-sm border-0 mb-4 p-4 d-flex flex-row align-items-center position-relative`}>
+              
+              <div className="d-flex flex-column align-items-center position-relative">
+                <div className="position-relative d-inline-block">
+                    {avatarPreview ? (
+                    <img 
+                        src={avatarPreview} 
+                        alt="Avatar" 
+                        className="rounded-circle border border-2 shadow-sm" 
+                        style={{ width: '80px', height: '80px', objectFit: 'cover' }} 
+                    />
+                    ) : (
+                    <div className="rounded-circle border d-flex justify-content-center align-items-center bg-secondary text-white" style={{ width: '80px', height: '80px' }}>
+                        <i className="bi bi-person-circle" style={{ fontSize: '2.5rem' }}></i>
+                    </div>
+                    )}
+                    
+                    <label 
+                    htmlFor="avatarUpload" 
+                    className="position-absolute bottom-0 end-0 bg-white border rounded-circle shadow-sm d-flex align-items-center justify-content-center text-main-orange" 
+                    style={{ cursor: 'pointer', width: '28px', height: '28px', transform: 'translate(10%, 10%)' }}
+                    title="Thay đổi ảnh đại diện"
+                    >
+                    <i className="bi bi-camera-fill" style={{ fontSize: '0.9rem' }}></i>
+                    </label>
+                    <input 
+                    type="file" 
+                    id="avatarUpload" 
+                    accept="image/*" 
+                    className="d-none" 
+                    onChange={handleImageChange} 
+                    />
+                </div>
+                
+                {/* HIỂN THỊ LỖI NGAY DƯỚI/CẠNH ẢNH */}
+                {avatarError ? (
+                  <div className="position-absolute start-100 ms-3 bg-danger text-white p-2 rounded shadow-sm flex-nowrap d-flex align-items-center" 
+                       style={{ zIndex: 10, width: 'max-content', fontSize: '0.75rem', top: '20%' }}>
+                    <div className={styles.arrowLeft}></div> {/* Tạo mũi tên trỏ vào ảnh nếu cần trong CSS */}
+                    {avatarError}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-muted" style={{ fontSize: '0.65rem' }}>Tối đa 10MB</div>
+                )}
+              </div>
+
               <div className="ms-4">
                 <h4 className="fw-bold mb-1">{userData.HoTen}</h4>
                 <p className="text-muted mb-0 small">ID: <span className="fw-bold">{userData._id}</span></p>
@@ -97,7 +178,9 @@ const ThongTinCaNhan = () => {
               <h5 className="fw-bold mb-4 border-bottom pb-2">Thông tin cá nhân</h5>
 
               {message.content && (
-                <div className={`alert alert-${message.type} text-center py-2 small`}>{message.content}</div>
+                <div className={`alert alert-${message.type} text-center py-2 small shadow-sm mb-4`}>
+                    {message.content}
+                </div>
               )}
 
               <form onSubmit={handleUpdate}>
@@ -129,8 +212,6 @@ const ThongTinCaNhan = () => {
                     <input type="text" className="form-control bg-light text-muted" value={getRoleName(userData.VaiTro)} readOnly />
                   </div>
 
-
-                  {/* HIỂN THỊ TRƯỜNG CHO GIÁO VIÊN (CỐ ĐỊNH) */}
                   {userData.VaiTro === 'GiaoVien' && (
                     <div className="col-12 col-md-6">
                       <label className="form-label fw-medium text-muted">Môn học giảng dạy (Cố định)</label>
@@ -145,13 +226,9 @@ const ThongTinCaNhan = () => {
                           readOnly
                         />
                       </div>
-                      <small className="text-info" style={{ fontSize: '0.75rem' }}>
-                        * Liên hệ Quản trị viên nếu muốn thay đổi bộ môn.
-                      </small>
                     </div>
                   )}
 
-                  {/* HIỂN THỊ TRƯỜNG CHO HỌC SINH */}
                   {userData.VaiTro === 'HocSinh' && (
                     <>
                       <div className="col-md-6">

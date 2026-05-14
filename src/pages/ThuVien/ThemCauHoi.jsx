@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import styles from './ThemCauHoi.module.css';
-import { fetchClient } from '../../utils/fetchClient'; // Bổ sung import fetchClient
+import { fetchClient } from '../../utils/fetchClient'; 
 
 const ThemCauHoi = () => {
     const navigate = useNavigate();
@@ -19,10 +19,16 @@ const ThemCauHoi = () => {
     const [doKho, setDoKho] = useState('Nhận biết'); 
     const [chuyenDe, setChuyenDe] = useState('');
 
+    // STATE HÌNH ẢNH MỚI BỔ SUNG
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [isRemoveImage, setIsRemoveImage] = useState(false); // Cờ báo hiệu muốn xóa ảnh cũ khi edit
+    const [imageError, setImageError] = useState('');
+
     // 2. STATE CHI TIẾT CHO TỪNG LOẠI
-    const [luaChon, setLuaChon] = useState(['', '', '', '']); // Dùng chung cho Trắc nghiệm & Đúng/Sai
-    const [dapAnDung, setDapAnDung] = useState(''); // Điền khuyết & Trắc nghiệm
-    const [dapAnGoiY, setDapAnGoiY] = useState(''); // Tự luận
+    const [luaChon, setLuaChon] = useState(['', '', '', '']); 
+    const [dapAnDung, setDapAnDung] = useState(''); 
+    const [dapAnGoiY, setDapAnGoiY] = useState(''); 
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(isEditMode); 
@@ -42,7 +48,6 @@ const ThemCauHoi = () => {
         if (isEditMode) {
             const fetchOldData = async () => {
                 try {
-                    // Đã sửa: Dùng fetchClient để lấy dữ liệu câu hỏi cũ
                     const res = await fetchClient(`/api/cauhoi/${editId}`);
                     
                     if (res.ok) {
@@ -53,13 +58,17 @@ const ThemCauHoi = () => {
                         setDoKho(data.DoKho || 'Nhận biết');
                         setChuyenDe(data.ChuyenDe || '');
 
-                        // MAP DỮ LIỆU CŨ VÀO STATE DỰA TRÊN SCHEMA MỚI
+                        // TẢI ẢNH CŨ LÊN PREVIEW (NẾU CÓ)
+                        if (data.HinhAnhMinhHoa) {
+                            setImagePreview(data.HinhAnhMinhHoa);
+                        }
+
+                        // MAP DỮ LIỆU CŨ VÀO STATE
                         if (data.LoaiCauHoi === 'TracNghiem') {
                             setLuaChon(Array.isArray(data.DanhSachLuaChon) && data.DanhSachLuaChon.length === 4 ? data.DanhSachLuaChon : ['', '', '', '']);
                             setDapAnDung(data.DapAnChinhXac || '');
                         } 
                         else if (data.LoaiCauHoi === 'DungSai') {
-                            // Schema chuẩn: ["Đúng", "Sai", "Đúng", "Sai"]
                             setLuaChon(Array.isArray(data.DanhSachLuaChon) && data.DanhSachLuaChon.length === 4 ? data.DanhSachLuaChon : ['Đúng', 'Đúng', 'Đúng', 'Đúng']);
                         } 
                         else if (data.LoaiCauHoi === 'DienKhuyet') {
@@ -84,14 +93,43 @@ const ThemCauHoi = () => {
         }
     }, [editId, isEditMode, navigate]);
 
+    // HÀM XỬ LÝ KHI CHỌN ẢNH
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        setImageError('');
+        
+        if (file) {
+            // Cảnh báo nếu ảnh > 10MB
+            if (file.size > 10 * 1024 * 1024) {
+                setImageError('⚠️ Vui lòng chọn ảnh nhẹ hơn 10MB');
+                e.target.value = "";
+                return;
+            }
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+            setIsRemoveImage(false); // Nếu chọn ảnh mới, hủy cờ báo xóa ảnh
+        }
+    };
+
+    // HÀM XỬ LÝ KHI BẤM NÚT XÓA ẢNH
+    const handleRemoveImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
+        setIsRemoveImage(true); // Bật cờ báo xóa ảnh
+        document.getElementById('imageUpload').value = "";
+    };
+
     const handleOptionChange = (index, value) => {
         const newOptions = [...luaChon];
         newOptions[index] = value;
         setLuaChon(newOptions);
     };
 
+    // SUBMIT FORM BẰNG FORMDATA ĐỂ HỖ TRỢ UPLOAD FILE
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (imageError) return; // Chặn lưu nếu ảnh đang bị lỗi dung lượng
+
         if (!monHoc) {
             alert("Vui lòng cập nhật môn học trước khi lưu câu hỏi!");
             return;
@@ -99,39 +137,48 @@ const ThemCauHoi = () => {
 
         setIsSubmitting(true);
         
-        const payload = {
-            LoaiCauHoi: loaiCauHoi,
-            NoiDungCauHoi: noiDung,
-            MonHoc: monHoc,
-            DoKho: doKho,
-            ChuyenDe: chuyenDe,
-            TrangThai: 'Đang kiểm duyệt' 
-        };
-
-        // Gắn thêm dữ liệu tùy theo loại câu hỏi
-        if (loaiCauHoi === 'TracNghiem') {
-            payload.DanhSachLuaChon = luaChon;
-            payload.DapAnChinhXac = dapAnDung;
-        } else if (loaiCauHoi === 'DungSai') {
-            payload.DanhSachLuaChon = luaChon;
-            payload.DapAnChinhXac = ""; 
-        } else if (loaiCauHoi === 'DienKhuyet') {
-            payload.DanhSachLuaChon = [];
-            payload.DapAnChinhXac = dapAnDung;
-        } else if (loaiCauHoi === 'TuLuan') {
-            payload.DanhSachLuaChon = [];
-            payload.DapAnChinhXac = "";
-            payload.DapAnGoiY = dapAnGoiY;
-        }
-
         try {
-            // Đã sửa: Dùng fetchClient để POST/PUT lên server
+            const formData = new FormData();
+            
+            // Append các text field
+            formData.append('LoaiCauHoi', loaiCauHoi);
+            formData.append('NoiDungCauHoi', noiDung);
+            formData.append('MonHoc', monHoc);
+            formData.append('DoKho', doKho);
+            formData.append('ChuyenDe', chuyenDe);
+            formData.append('TrangThai', 'Đang kiểm duyệt');
+
+            // Gắn thêm dữ liệu tùy theo loại câu hỏi (Mảng phải được stringify)
+            if (loaiCauHoi === 'TracNghiem') {
+                formData.append('DanhSachLuaChon', JSON.stringify(luaChon));
+                formData.append('DapAnChinhXac', dapAnDung);
+            } else if (loaiCauHoi === 'DungSai') {
+                formData.append('DanhSachLuaChon', JSON.stringify(luaChon));
+                formData.append('DapAnChinhXac', ""); 
+            } else if (loaiCauHoi === 'DienKhuyet') {
+                formData.append('DanhSachLuaChon', JSON.stringify([]));
+                formData.append('DapAnChinhXac', dapAnDung);
+            } else if (loaiCauHoi === 'TuLuan') {
+                formData.append('DanhSachLuaChon', JSON.stringify([]));
+                formData.append('DapAnChinhXac', "");
+                formData.append('DapAnGoiY', dapAnGoiY);
+            }
+
+            // APPEND FILE ẢNH HOẶC CỜ XÓA ẢNH
+            if (imageFile) {
+                formData.append('image', imageFile); // 'image' là tên trường khai báo bên Router
+            }
+            if (isRemoveImage) {
+                formData.append('isRemoveImage', 'true');
+            }
+
             const url = isEditMode ? `/api/cauhoi/${editId}` : '/api/cauhoi';
             const method = isEditMode ? 'PUT' : 'POST';
 
+            // Dùng fetchClient để POST/PUT lên server (sẽ tự nhận diện FormData)
             const response = await fetchClient(url, {
                 method: method,
-                body: JSON.stringify(payload)
+                body: formData
             });
 
             if (response.ok) {
@@ -161,6 +208,7 @@ const ThemCauHoi = () => {
             </p>
 
             <form onSubmit={handleSubmit}>
+                {/* CARD 1: CẤU HÌNH CHUNG */}
                 <div className="card shadow-sm border-0 mb-4 mt-3">
                     <div className="card-body p-4">
                         <h5 className="mb-4 fw-bold border-bottom pb-2">Cấu hình chung</h5>
@@ -171,7 +219,7 @@ const ThemCauHoi = () => {
                                     className="form-select shadow-none" 
                                     value={loaiCauHoi} 
                                     onChange={(e) => setLoaiCauHoi(e.target.value)}
-                                    disabled={isEditMode} // Không cho phép đổi dạng câu khi sửa
+                                    disabled={isEditMode} 
                                 >
                                     <option value="TracNghiem">Trắc nghiệm (4 lựa chọn)</option>
                                     <option value="DungSai">Đúng / Sai</option>
@@ -217,6 +265,7 @@ const ThemCauHoi = () => {
                     </div>
                 </div>
 
+                {/* CARD 2: NỘI DUNG CÂU HỎI VÀ ẢNH MINH HỌA */}
                 <div className="card shadow-sm border-0 mb-4">
                     <div className="card-body p-4">
                         <h5 className="mb-4 fw-bold border-bottom pb-2">Nội dung câu hỏi</h5>
@@ -227,21 +276,78 @@ const ThemCauHoi = () => {
                             </div>
                         )}
 
-                        <textarea 
-                            className="form-control mb-3 shadow-none" 
-                            rows="4" 
-                            placeholder="Nhập nội dung đề bài tại đây..." 
-                            value={noiDung} 
-                            onChange={(e) => setNoiDung(e.target.value)}
-                            required
-                        ></textarea>
+                        <div className="row">
+                            {/* Cột trái: Nhập văn bản */}
+                            <div className="col-md-8">
+                                <textarea 
+                                    className="form-control mb-3 shadow-none" 
+                                    rows="5" 
+                                    placeholder="Nhập nội dung đề bài tại đây..." 
+                                    value={noiDung} 
+                                    onChange={(e) => setNoiDung(e.target.value)}
+                                    required
+                                ></textarea>
+                            </div>
+                            
+                            {/* Cột phải: Upload hình ảnh minh họa */}
+                            <div className="col-md-4">
+                                <div className="border rounded p-3 bg-light h-100 d-flex flex-column align-items-center justify-content-center text-center">
+                                    <label className="fw-bold d-block mb-2 text-secondary w-100">
+                                        Ảnh minh họa (Tùy chọn)
+                                    </label>
+                                    
+                                    {!imagePreview ? (
+                                        <div className="w-100">
+                                            <label htmlFor="imageUpload" className="btn btn-outline-secondary w-100 border-dashed py-3 d-flex flex-column align-items-center">
+                                                <i className="bi bi-cloud-arrow-up fs-2 mb-2"></i>
+                                                <span>Tải ảnh lên</span>
+                                            </label>
+                                            <input 
+                                                type="file" 
+                                                id="imageUpload" 
+                                                accept="image/*" 
+                                                className="d-none" 
+                                                onChange={handleImageChange} 
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="position-relative d-inline-block">
+                                            <img 
+                                                src={imagePreview} 
+                                                alt="Minh họa" 
+                                                className="img-thumbnail shadow-sm" 
+                                                style={{ maxHeight: '160px', objectFit: 'contain' }} 
+                                            />
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-danger btn-sm position-absolute top-0 start-100 translate-middle rounded-circle shadow"
+                                                onClick={handleRemoveImage}
+                                                title="Xóa ảnh này"
+                                                style={{ width: '28px', height: '28px', padding: 0 }}
+                                            >
+                                                <i className="bi bi-x fs-5"></i>
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Cảnh báo lỗi ảnh nếu có */}
+                                    {imageError && (
+                                        <div className="text-danger small mt-2 fw-bold">
+                                            {imageError}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr className="my-4 text-muted" />
 
                         {/* 1. TRẮC NGHIỆM */}
                         {loaiCauHoi === 'TracNghiem' && (
                             <div className="mt-4">
-                                <label className="form-label fw-bold text-primary">Các phương án lựa chọn:</label>
+                                <label className="form-label fw-bold text-primary mb-3">Các phương án lựa chọn:</label>
                                 {['A', 'B', 'C', 'D'].map((label, idx) => (
-                                    <div key={label} className="input-group mb-2">
+                                    <div key={label} className="input-group mb-3">
                                         <span className="input-group-text fw-bold">{label}</span>
                                         <input 
                                             type="text" 
@@ -253,7 +359,7 @@ const ThemCauHoi = () => {
                                         />
                                         <div className="input-group-text bg-white" title="Đánh dấu đáp án đúng">
                                             <input 
-                                                className="form-check-input mt-0" 
+                                                className="form-check-input mt-0 cursor-pointer" 
                                                 type="radio" 
                                                 name="correctRadio" 
                                                 checked={dapAnDung === label}
@@ -266,23 +372,28 @@ const ThemCauHoi = () => {
                             </div>
                         )}
 
-                        {/* 2. ĐÚNG SAI (SCHEMA MỚI) */}
+                        {/* 2. ĐÚNG SAI */}
                         {loaiCauHoi === 'DungSai' && (
                             <div className="mt-4">
-                                <label className="form-label fw-bold text-primary">Cài đặt đáp án cho 4 phát biểu:</label>
-                                {['Phát biểu a', 'Phát biểu b', 'Phát biểu c', 'Phát biểu d'].map((label, idx) => (
-                                    <div key={label} className="input-group mb-2" style={{maxWidth: '300px'}}>
-                                        <span className="input-group-text fw-bold flex-grow-1">{label}</span>
-                                        <select 
-                                            className="form-select shadow-none" 
-                                            value={luaChon[idx] || 'Đúng'}
-                                            onChange={(e) => handleOptionChange(idx, e.target.value)}
-                                        >
-                                            <option value="Đúng">Đúng</option>
-                                            <option value="Sai">Sai</option>
-                                        </select>
-                                    </div>
-                                ))}
+                                <label className="form-label fw-bold text-primary mb-3">Cài đặt đáp án cho 4 phát biểu:</label>
+                                <div className="row row-cols-1 row-cols-md-2 g-3">
+                                    {['Phát biểu a', 'Phát biểu b', 'Phát biểu c', 'Phát biểu d'].map((label, idx) => (
+                                        <div className="col" key={label}>
+                                            <div className="input-group">
+                                                <span className="input-group-text fw-bold flex-grow-1 bg-white">{label}</span>
+                                                <select 
+                                                    className="form-select shadow-none flex-grow-0" 
+                                                    style={{ width: 'auto', minWidth: '100px' }}
+                                                    value={luaChon[idx] || 'Đúng'}
+                                                    onChange={(e) => handleOptionChange(idx, e.target.value)}
+                                                >
+                                                    <option value="Đúng">Đúng</option>
+                                                    <option value="Sai">Sai</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
@@ -292,7 +403,7 @@ const ThemCauHoi = () => {
                                 <label className="form-label fw-bold text-primary">Từ khóa cần điền:</label>
                                 <input 
                                     type="text" 
-                                    className="form-control shadow-none" 
+                                    className="form-control shadow-none border-primary" 
                                     placeholder="Nhập đáp án chính xác..." 
                                     value={dapAnDung} 
                                     onChange={(e) => setDapAnDung(e.target.value)} 
@@ -306,7 +417,7 @@ const ThemCauHoi = () => {
                             <div className="mt-4">
                                 <label className="form-label fw-bold text-primary">Gợi ý đáp án / Bài mẫu:</label>
                                 <textarea 
-                                    className="form-control shadow-none" 
+                                    className="form-control shadow-none border-primary bg-light" 
                                     rows="5" 
                                     placeholder="Nhập nội dung gợi ý trả lời..." 
                                     value={dapAnGoiY} 
@@ -317,7 +428,8 @@ const ThemCauHoi = () => {
                     </div>
                 </div>
 
-                <div className="text-end mb-5">
+                {/* NÚT SUBMIT */}
+                <div className="text-end mb-5 mt-4">
                     <Link to="/thu-vien" className="btn btn-light btn-lg px-4 me-3 shadow-sm border">Hủy bỏ</Link>
                     <button type="submit" className="btn btn-primary btn-lg px-5 shadow fw-bold" disabled={isSubmitting}>
                         {isSubmitting ? (

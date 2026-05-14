@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import styles from './ChiTietCauHoi.module.css';
-import { fetchClient } from '../../utils/fetchClient'; // Bổ sung import fetchClient
+import { fetchClient } from '../../utils/fetchClient'; 
 
 const ChiTietCauHoi = () => {
     const { id } = useParams();
@@ -15,7 +15,7 @@ const ChiTietCauHoi = () => {
 
     // STATE TƯƠNG TÁC NGƯỜI DÙNG
     const [userAnswer, setUserAnswer] = useState(''); 
-    const [userAnswersDS, setUserAnswersDS] = useState(['', '', '', '']); // 4 ý của câu Đúng/Sai
+    const [userAnswersDS, setUserAnswersDS] = useState(['', '', '', '']); 
     const [isSubmitted, setIsSubmitted] = useState(false); 
     const [isCorrect, setIsCorrect] = useState(null); 
 
@@ -29,7 +29,6 @@ const ChiTietCauHoi = () => {
 
         const fetchDetail = async () => {
             try {
-                // Đã sửa: Dùng fetchClient để tự động xử lý URL và Token
                 const res = await fetchClient(`/api/cauhoi/${id}`);
                 const data = await res.json();
                 
@@ -189,11 +188,23 @@ const ChiTietCauHoi = () => {
                             </div>
 
                             <h5 className="fw-bold text-secondary mb-3 small text-uppercase">Nội dung câu hỏi:</h5>
-                            <div className={`fs-5 text-dark mb-4 lh-base ${styles.questionContent}`}>
+                            <div className={`fs-5 text-dark mb-3 lh-base ${styles.questionContent}`} style={{ whiteSpace: 'pre-line' }}>
                                 {question.NoiDungCauHoi}
                             </div>
 
-                            <div className={`p-4 rounded-3 mb-4 ${styles.interactiveZone}`}>
+                            {/* HIỂN THỊ ẢNH MINH HỌA NẾU CÓ */}
+                            {question.HinhAnhMinhHoa && (
+                                <div className="mb-4 text-center">
+                                    <img 
+                                        src={question.HinhAnhMinhHoa} 
+                                        alt="Minh họa câu hỏi" 
+                                        className="img-fluid rounded shadow-sm border" 
+                                        style={{ maxHeight: '400px', objectFit: 'contain' }} 
+                                    />
+                                </div>
+                            )}
+
+                            <div className={`p-4 rounded-3 mb-4 mt-2 ${styles.interactiveZone}`}>
                                 <h6 className="fw-bold mb-4 text-primary">
                                     <i className={question.LoaiCauHoi === 'TuLuan' ? "bi bi-journal-text me-2" : "bi bi-pencil-square me-2"}></i>
                                     {question.LoaiCauHoi === 'TuLuan' ? "Hướng dẫn học tập:" : "Khu vực làm bài:"}
