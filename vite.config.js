@@ -7,10 +7,13 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
-    allowedHosts: true, // SỬA Ở ĐÂY: Dùng true (không có dấu nháy) để mở khóa cho mọi Host
+    allowedHosts: true, // Cho phép mọi Host (Ngrok/Localtonet) truy cập
     cors: true,
     hmr: {
-      clientPort: 443,
+      // THAY THẾ clientPort: 443 BẰNG 3 DÒNG NÀY:
+      host: 'localhost',
+      protocol: 'ws',
+      port: 5173,
     },
   }
 })

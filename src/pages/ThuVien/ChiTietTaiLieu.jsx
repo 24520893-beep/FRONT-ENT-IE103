@@ -36,7 +36,7 @@ const ChiTietTaiLieu = () => {
         fetchDetail();
     }, [id, navigate]);
 
-    // HÀM ÉP TRÌNH DUYỆT TẢI FILE TỪ CLOUD (CROSS-ORIGIN)
+    // HÀM TẢI FILE TỪ CLOUDINARY VỀ MÁY
     const handleDownload = async (url, filename) => {
         setIsDownloading(true);
         try {
@@ -45,13 +45,14 @@ const ChiTietTaiLieu = () => {
             const blobUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = filename || 'Tai_lieu_HOCMOI';
+            a.download = filename || 'Tai_lieu_HOCMOI.pdf';
             document.body.appendChild(a);
             a.click();
             a.remove();
             window.URL.revokeObjectURL(blobUrl);
         } catch (error) {
             console.error("Lỗi khi tải file:", error);
+            // Fallback: Mở tab mới để tải nếu fetch bị lỗi mạng
             window.open(url, '_blank');
         } finally {
             setIsDownloading(false);
@@ -75,9 +76,6 @@ const ChiTietTaiLieu = () => {
 
     const isPDF = documentData.DinhDang === 'PDF';
     const isVideo = documentData.DinhDang === 'VIDEO' || documentData.DinhDang === 'MP4';
-    
-    // ĐÃ SỬA: Bỏ fl_inline, quay về dùng Google Docs Viewer cho PDF để lách luật của Cloudinary
-    const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(documentData.DuongDan)}&embedded=true`;
 
     return (
         <main className={styles.pageDetail}>
@@ -101,15 +99,23 @@ const ChiTietTaiLieu = () => {
                             </div>
                             <div className={`card-body p-0 bg-light`}>
                                 {isPDF ? (
-                                    /* ĐÃ SỬA LẠI THÀNH IFRAME GỌI GOOGLE DOCS VIEWER */
-                                    <iframe 
-                                        src={googleDocsUrl} 
-                                        title={documentData.TenTaiLieu}
+                                    /* DÙNG THẺ OBJECT NATIVE CỦA TRÌNH DUYỆT - Sạch sẽ và mượt nhất */
+                                    <object 
+                                        data={`${documentData.DuongDan}#toolbar=0`} 
+                                        type="application/pdf"
                                         className="w-100 border-0"
                                         style={{ minHeight: '80vh', display: 'block' }}
                                     >
-                                        <p className="text-center mt-5">Trình duyệt không hỗ trợ xem iframe. <br/><a href={documentData.DuongDan}>Bấm vào đây để tải về</a></p>
-                                    </iframe>
+                                        <div className="p-5 text-center">
+                                            <p>Trình duyệt của bạn không hỗ trợ xem trực tiếp PDF.</p>
+                                            <button 
+                                                onClick={() => handleDownload(documentData.DuongDan, `${documentData.TenTaiLieu}.pdf`)} 
+                                                className="btn btn-primary"
+                                            >
+                                                Tải file về máy để xem
+                                            </button>
+                                        </div>
+                                    </object>
                                 ) : isVideo ? (
                                     <video controls className="w-100 bg-black" style={{ maxHeight: '80vh' }}>
                                         <source src={documentData.DuongDan} type="video/mp4" />
