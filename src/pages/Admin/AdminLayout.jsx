@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import styles from './AdminDashboard.module.css';
-import { fetchClient } from '../../utils/fetchClient'; // Bổ sung import fetchClient
+import { fetchClient } from '../../utils/fetchClient'; 
 
 const AdminLayout = () => {
     const navigate = useNavigate();
@@ -10,14 +10,9 @@ const AdminLayout = () => {
     useEffect(() => {
         const verifyAdminSession = async () => {
             try {
-                // Đã sửa: Tận dụng fetchClient với đường dẫn tương đối
                 const response = await fetchClient('/api/nguoidung/me');
-                
-                // Lưu ý: Nếu response.status là 401, fetchClient đã tự chuyển hướng về /dang-nhap
                 if (response.ok) {
                     const data = await response.json();
-                    
-                    // 2. Kiểm tra quyền hạn (Role-based Access Control)
                     if (data.VaiTro === 'HocSinh') {
                         alert("Bạn không có quyền truy cập khu vực quản trị!");
                         navigate('/');
@@ -25,7 +20,6 @@ const AdminLayout = () => {
                     }
                     setAdminInfo(data);
                 } else {
-                    // Xử lý các lỗi khác ngoài 401 (ví dụ 403, 500)
                     console.error("Không thể xác thực quyền Admin.");
                     navigate('/dang-nhap');
                 }
@@ -42,17 +36,17 @@ const AdminLayout = () => {
         { path: '/admin-dashboard/tailieu', icon: 'bi-journal-text', label: 'Quản lý Tài liệu' },
         { path: '/admin-dashboard/dethi', icon: 'bi-file-earmark-text', label: 'Quản lý Đề thi' },
         { path: '/admin-dashboard/cauhoi', icon: 'bi-patch-question', label: 'Quản lý Câu hỏi' },
-        { path: '/admin-dashboard/lotrinh', icon: 'bi-map', label: 'Quản lý Lộ trình' }
+        { path: '/admin-dashboard/lotrinh', icon: 'bi-map', label: 'Quản lý Lộ trình' },
+        // Thêm đường dẫn tới trang Quản lý giáo viên đã xóa
+        { path: '/admin-dashboard/giaovien-daxoa', icon: 'bi-person-x-fill', label: 'Giáo viên đã xóa' }
     ];
 
     const handleLogout = () => {
-        // 3. Đồng bộ hóa việc dọn dẹp với logic trong fetchClient
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
         navigate('/dang-nhap');
     };
 
-    // Nếu chưa lấy được thông tin admin, có thể hiển thị loading để tránh "nháy" UI
     if (!adminInfo) {
         return (
             <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
@@ -65,7 +59,6 @@ const AdminLayout = () => {
 
     return (
         <div className={styles.adminLayout}>
-            {/* SIDEBAR */}
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarHeader}>
                     <h4 className="fw-bold text-main-orange mb-0">HOCMOI Admin</h4>
@@ -97,7 +90,6 @@ const AdminLayout = () => {
                 </div>
             </aside>
 
-            {/* NỘI DUNG CHÍNH */}
             <main className={styles.mainContent}>
                 <Outlet context={{ adminInfo }} />
             </main>

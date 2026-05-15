@@ -8,26 +8,24 @@ const ThemTaiLieu = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // BẮT THAM SỐ TỪ URL ĐỂ BIẾT CÓ PHẢI CHẾ ĐỘ SỬA KHÔNG
   const queryParams = new URLSearchParams(location.search);
   const editId = queryParams.get('edit');
   const isEditMode = !!editId;
 
   const [docName, setDocName] = useState('');
   const [format, setFormat] = useState('');
-
-  // STATE CHO NGƯỜI DÙNG (Giáo viên)
   const [user, setUser] = useState(null);
-
-  // STATE CHO NHÃN DÁN (Tags)
   const [tagOptions, setTagOptions] = useState([]); 
   const [selectedTags, setSelectedTags] = useState([]); 
   const [isLoadingTags, setIsLoadingTags] = useState(false);
-  
-  // STATE TẢI DỮ LIỆU CŨ
   const [isLoadingData, setIsLoadingData] = useState(isEditMode);
 
-  // 1. LẤY THÔNG TIN GIÁO VIÊN TỪ LOCALSTORAGE
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    message: '',
+    type: 'primary'
+  });
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -40,7 +38,6 @@ const ThemTaiLieu = () => {
     return `${id.substring(0, 6)}***${id.substring(id.length - 6)}`;
   };
 
-  // 2. FETCH DANH SÁCH NHÃN DÁN SẴN CÓ VÀ DỮ LIỆU TÀI LIỆU CŨ (NẾU CÓ)
   useEffect(() => {
     const fetchTags = async () => {
       try {
@@ -65,7 +62,6 @@ const ThemTaiLieu = () => {
           const data = await res.json();
           setDocName(data.TenTaiLieu);
           setFormat(data.DinhDang);
-          // Map lại danh sách nhãn dán cũ cho react-select
           if (data.DanhSachNhanDan) {
             setSelectedTags(data.DanhSachNhanDan.map(tag => ({
               value: tag._id,
@@ -93,13 +89,23 @@ const ThemTaiLieu = () => {
     setSelectedTags((prev) => [...prev, newOption]);
   };
 
-  // 3. HÀM SUBMIT (DÙNG CHUNG CHO POST VÀ PUT)
-  const handleSubmit = async (e) => {
+  // 1. CHỈNH SỬA: Loại bỏ alert, chỉ hiện Modal khi form đã vượt qua kiểm tra native (required)
+  const handlePreSubmit = (e) => {
     e.preventDefault();
+    setConfirmModal({
+        isOpen: true,
+        message: isEditMode 
+            ? "Xác nhận cập nhật thông tin mới cho tài liệu này?" 
+            : "Xác nhận tải tài liệu này lên hệ thống và gửi kiểm duyệt?",
+        type: 'primary'
+    });
+  };
+
+  const executeSubmit = async () => {
+    setConfirmModal({ ...confirmModal, isOpen: false });
     setIsLoadingTags(true);
 
     try {
-      // Tách nhãn mới để tạo
       const existingTagIds = selectedTags.filter(tag => !tag.isNew).map(tag => tag.value);
       const tagsToCreate = selectedTags.filter(tag => tag.isNew);
 
@@ -115,50 +121,39 @@ const ThemTaiLieu = () => {
         newTagIds = createdTags.map(tag => tag._id);
       }
 
-      // CHUYỂN ĐỔI SANG FORMDATA
       const formData = new FormData();
       formData.append('TenTaiLieu', docName);
       formData.append('DinhDang', format);
       formData.append('TrangThai', 'Đang kiểm duyệt');
 
-      // Mảng phải stringify trước khi append vào FormData
       const allTags = [...existingTagIds, ...newTagIds];
       if (allTags.length > 0) {
         formData.append('DanhSachNhanDan', JSON.stringify(allTags));
       }
 
-      // Lấy file từ input
       const fileInput = document.getElementById('fileUpload');
       if (fileInput && fileInput.files.length > 0) {
         formData.append('fileUpload', fileInput.files[0]);
-      } else if (!isEditMode) {
-        // Cảnh báo nếu tạo mới mà không up file
-        alert("Vui lòng tải lên một tệp tài liệu!");
-        setIsLoadingTags(false);
-        return;
       }
 
-      // Xác định endpoint và method dựa trên mode
       const url = isEditMode ? `/api/tailieuhoctap/${editId}` : '/api/tailieuhoctap';
       const method = isEditMode ? 'PUT' : 'POST';
 
-      // Gọi API qua fetchClient. FormData được truyền thẳng vào body
       const resDoc = await fetchClient(url, {
         method: method,
         body: formData 
       });
 
       if (resDoc.ok) {
-        alert(`Đã ${isEditMode ? 'cập nhật' : 'tạo mới'} tài liệu thành công! Trạng thái: Chờ duyệt.`);
+        alert("Thành công!");
         navigate('/thu-vien'); 
       } else {
         const errorData = await resDoc.json();
-        alert(`Lỗi khi ${isEditMode ? 'cập nhật' : 'tạo'} tài liệu: ` + (errorData.message || errorData.error));
+        alert("Lỗi: " + (errorData.message || "Không thể thực hiện"));
       }
 
     } catch (error) {
-      console.error("Lỗi:", error);
-      alert("Đã xảy ra sự cố trong quá trình lưu dữ liệu.");
+      alert("Đã xảy ra sự cố kết nối máy chủ.");
     } finally {
       setIsLoadingTags(false);
     }
@@ -167,116 +162,147 @@ const ThemTaiLieu = () => {
   if (isLoadingData) return <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>;
 
   return (
-    <div className="container py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        {/* ĐỔI TIÊU ĐỀ THEO MODE */}
-        <h1 className={styles.pageTitle}>
-            {isEditMode ? 'Cập nhật tài liệu' : 'Thêm tài liệu mới'}
-        </h1>
-      </div>
+    <>
+      <div className="container py-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h1 className={styles.pageTitle}>
+              {isEditMode ? 'Cập nhật tài liệu' : 'Thêm tài liệu mới'}
+          </h1>
+        </div>
 
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body p-4">
-          <form onSubmit={handleSubmit}>
-            {/* ROW 1: Thông tin giáo viên */}
-            <div className="row mb-4">
-              <div className="col-md-6">
-                <label className="form-label fw-bold text-muted">Giáo viên thực hiện</label>
-                <div className="form-control bg-light">
-                  {user?.HoTen || "Đang tải..."}
+        <div className="card shadow-sm border-0 mb-4">
+          <div className="card-body p-4">
+            <form onSubmit={handlePreSubmit}>
+              <div className="row mb-4">
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted">Giáo viên thực hiện</label>
+                  <div className="form-control bg-light">{user?.HoTen || "Đang tải..."}</div>
+                </div>
+                <div className="col-md-6 mt-3 mt-md-0">
+                  <label className="form-label fw-bold text-muted">Mã GV</label>
+                  <div className="form-control bg-light">{user ? formatTeacherId(user._id) : ".........."}</div>
                 </div>
               </div>
-              <div className="col-md-6 mt-3 mt-md-0">
-                <label className="form-label fw-bold text-muted">Mã GV</label>
-                <div className="form-control bg-light">
-                  {user ? formatTeacherId(user._id) : ".........."}
+
+              <div className="row mb-4">
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted">Môn học phụ trách</label>
+                  <div className="form-control bg-light">{user?.MonHoc || "Chưa cập nhật"}</div>
+                </div>
+                <div className="col-md-6 mt-3 mt-md-0">
+                  <label className="form-label fw-bold">Tên tài liệu <span className="text-danger">*</span></label>
+                  <input
+                    type="text"
+                    className="form-control shadow-none"
+                    placeholder="Nhập tên cho tài liệu..."
+                    value={docName}
+                    onChange={(e) => setDocName(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* ROW 2: Môn học và Tên tài liệu */}
-            <div className="row mb-4">
-              <div className="col-md-6">
-                <label className="form-label fw-bold text-muted">Môn học phụ trách</label>
-                <div className="form-control bg-light">
-                  {user?.MonHoc || "Chưa cập nhật"}
+              <div className="row mb-4">
+                <div className="col-md-6">
+                  <label className="form-label fw-bold">Định dạng <span className="text-danger">*</span></label>
+                  <select
+                    className="form-select shadow-none"
+                    value={format}
+                    onChange={(e) => setFormat(e.target.value)}
+                    required
+                  >
+                    <option value="">Chọn định dạng</option>
+                    <option value="PDF">PDF</option>
+                    <option value="MP4">MP4</option>
+                  </select>
+                </div>
+                <div className="col-md-6 mt-3 mt-md-0">
+                  <label className="form-label fw-bold">Thêm tài liệu <span className="text-danger">*</span></label>
+                  <div className={styles.uploadArea}>
+                    {/* 2. CẬP NHẬT: Thêm required={!isEditMode} */}
+                    <input 
+                        type="file" 
+                        className="form-control" 
+                        id="fileUpload" 
+                        accept=".pdf,audio/mp3,video/mp4" 
+                        required={!isEditMode} 
+                    />
+                  </div>
+                  {isEditMode && <small className="text-muted mt-1 d-block">Bỏ trống nếu muốn giữ nguyên file cũ.</small>}
                 </div>
               </div>
-              <div className="col-md-6 mt-3 mt-md-0">
-                <label className="form-label fw-bold">Tên tài liệu <span className="text-danger">*</span></label>
-                <input
-                  type="text"
-                  className="form-control shadow-none"
-                  placeholder="Nhập tên cho tài liệu..."
-                  value={docName}
-                  onChange={(e) => setDocName(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
 
-            {/* ROW 3: Định dạng & Upload */}
-            <div className="row mb-4">
-              <div className="col-md-6">
-                <label className="form-label fw-bold">Định dạng <span className="text-danger">*</span></label>
-                <select
-                  className="form-select shadow-none"
-                  value={format}
-                  onChange={(e) => setFormat(e.target.value)}
-                  required
+              <div className="row mb-4 bg-light p-3 rounded border">
+                <div className="col-12">
+                  <label className="form-label fw-bold">Nhãn dán (Tags)</label>
+                  <small className="text-muted d-block mb-2">Nhãn mới sẽ chỉ được lưu vào hệ thống sau khi bạn bấm Lưu.</small>
+                  <CreatableSelect
+                    isMulti
+                    isDisabled={isLoadingTags}
+                    isLoading={isLoadingTags}
+                    onChange={(newValue) => setSelectedTags(newValue)}
+                    onCreateOption={handleCreateTag}
+                    options={tagOptions}
+                    value={selectedTags}
+                    placeholder="Chọn hoặc gõ tên nhãn dán..."
+                    noOptionsMessage={() => "Không tìm thấy nhãn dán"}
+                    formatCreateLabel={(inputValue) => `+ Thêm nhãn mới: "${inputValue}"`}
+                  />
+                </div>
+              </div>
+
+              <div className="text-end">
+                <Link to="/thu-vien" className="btn btn-light btn-lg px-4 me-3 shadow-sm border">Hủy bỏ</Link>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-lg px-5 shadow fw-bold"
+                  disabled={isLoadingTags}
                 >
-                  <option value="">Chọn định dạng</option>
-                  <option value="PDF">PDF</option>
-                  <option value="MP4">MP4</option>
-                </select>
+                  {isLoadingTags ? (
+                    <><span className="spinner-border spinner-border-sm me-2"></span>Đang lưu...</>
+                  ) : (
+                    <><i className="bi bi-save me-2"></i>{isEditMode ? 'Cập nhật tài liệu' : 'Lưu tài liệu'}</>
+                  )}
+                </button>
               </div>
-              <div className="col-md-6 mt-3 mt-md-0">
-                <label className="form-label fw-bold">Thêm tài liệu (Tùy chọn tải file mới)</label>
-                <div className={styles.uploadArea}>
-                  <input type="file" className="form-control" id="fileUpload" accept=".pdf,audio/mp3,video/mp4" />
-                </div>
-                {isEditMode && <small className="text-muted mt-1 d-block">Bỏ trống nếu muốn giữ nguyên file cũ.</small>}
-              </div>
-            </div>
-
-            {/* ROW 4: Nhãn dán */}
-            <div className="row mb-4 bg-light p-3 rounded border">
-              <div className="col-12">
-                <label className="form-label fw-bold">Nhãn dán (Tags)</label>
-                <small className="text-muted d-block mb-2">Nhãn mới sẽ chỉ được lưu vào hệ thống sau khi bạn bấm Lưu.</small>
-                <CreatableSelect
-                  isMulti
-                  isDisabled={isLoadingTags}
-                  isLoading={isLoadingTags}
-                  onChange={(newValue) => setSelectedTags(newValue)}
-                  onCreateOption={handleCreateTag}
-                  options={tagOptions}
-                  value={selectedTags}
-                  placeholder="Chọn hoặc gõ tên nhãn dán..."
-                  noOptionsMessage={() => "Không tìm thấy nhãn dán"}
-                  formatCreateLabel={(inputValue) => `+ Thêm nhãn mới: "${inputValue}"`}
-                />
-              </div>
-            </div>
-
-            <div className="text-end">
-              <Link to="/thu-vien" className="btn btn-light btn-lg px-4 me-3 shadow-sm border">Hủy bỏ</Link>
-              <button
-                type="submit"
-                className="btn btn-primary btn-lg px-5 shadow fw-bold"
-                disabled={isLoadingTags}
-              >
-                {isLoadingTags ? (
-                  <><span className="spinner-border spinner-border-sm me-2"></span>Đang xử lý...</>
-                ) : (
-                  <><i className="bi bi-save me-2"></i>{isEditMode ? 'Cập nhật tài liệu' : 'Lưu tài liệu'}</>
-                )}
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+
+      {confirmModal.isOpen && (
+        <div 
+            className="d-flex align-items-center justify-content-center" 
+            style={{
+                position: 'fixed', 
+                top: 0, left: 0, right: 0, bottom: 0, 
+                backgroundColor: 'rgba(0,0,0,0.5)', 
+                zIndex: 10000,
+                backdropFilter: 'blur(3px)'
+            }}
+        >
+            <div className="bg-white p-4 p-md-5 rounded-4 shadow-lg text-center animate__animated animate__zoomIn" style={{ maxWidth: '450px', width: '90%' }}>
+                <i className="bi bi-question-circle text-primary mb-3" style={{ fontSize: '4rem' }}></i>
+                <h4 className="fw-bold text-dark">Xác nhận thao tác</h4>
+                <p className="text-muted mt-2 mb-4">{confirmModal.message}</p>
+                <div className="d-flex justify-content-center gap-3">
+                    <button 
+                        className="btn btn-light border fw-bold rounded-pill px-4 py-2" 
+                        onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                    >
+                        Quay lại
+                    </button>
+                    <button 
+                        className="btn btn-primary fw-bold rounded-pill px-4 py-2 text-white"
+                        onClick={executeSubmit}
+                    >
+                        Đồng ý lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
+    </>
   );
 };
 

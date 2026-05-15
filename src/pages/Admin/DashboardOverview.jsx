@@ -3,7 +3,7 @@ import ChartsEmbedSDK from '@mongodb-js/charts-embed-dom';
 import styles from './AdminDashboard.module.css';
 
 const DashboardOverview = () => {
-    // Đã sửa: Thay thế useState bằng useRef để lưu trữ instance của biểu đồ, tránh re-render rò rỉ bộ nhớ
+    // Lưu trữ instance của biểu đồ, tránh re-render rò rỉ bộ nhớ
     const growthChartRefInstance = useRef(null);
     const loadChartRefInstance = useRef(null);
 
@@ -25,11 +25,32 @@ const DashboardOverview = () => {
             baseUrl: 'https://charts.mongodb.com/charts-ie103_quanlyonthi_tudaica-dnifgsl' 
         });
 
+        // 1. TÍNH TOÁN BỘ LỌC MẶC ĐỊNH CHO BIỂU ĐỒ TĂNG TRƯỞNG (Năm hiện tại)
+        const startGrowth = new Date(`${currentYearStr}-01-01T00:00:00.000Z`);
+        const endGrowth = new Date(`${parseInt(currentYearStr) + 1}-01-01T00:00:00.000Z`);
+        const initialGrowthFilter = { NgayTao: { $gte: startGrowth, $lt: endGrowth } };
+
+        // 2. TÍNH TOÁN BỘ LỌC MẶC ĐỊNH CHO BIỂU ĐỒ LƯU LƯỢNG (Tuần 1 của Năm hiện tại)
+        const janFirst = new Date(parseInt(currentYearStr), 0, 1);
+        const startOfWeek = new Date(janFirst.getTime() + 0); // (1 - 1) * 7 ngày = 0
+        const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const initialLoadFilter = { NgayTao: { $gte: startOfWeek, $lt: endOfWeek } };
+
         const kpiTraffic = sdk.createChart({ chartId: 'b0d819a6-92f8-42f2-8bf0-028d78a8adb4', height: '120px' });
         const kpiAlert = sdk.createChart({ chartId: '0dd3258d-0f0e-4406-b40e-53fc23c27e32', height: '120px' });
         const chartRole = sdk.createChart({ chartId: '66f1e02f-8dc1-44dd-8e99-c0632983d1d3', height: '200px' });
-        const chartGrowthInstance = sdk.createChart({ chartId: '9648ff60-cf8d-413e-a526-8f4c13a6be2c', height: '350px' });
-        const chartLoadInstance = sdk.createChart({ chartId: '78b1ddec-ea09-4c53-8e65-381a742291ae', height: '400px' });
+        
+        // 3. TRUYỀN BỘ LỌC MẶC ĐỊNH VÀO NGAY LÚC TẠO BIỂU ĐỒ
+        const chartGrowthInstance = sdk.createChart({ 
+            chartId: '9648ff60-cf8d-413e-a526-8f4c13a6be2c', 
+            height: '350px',
+            filter: initialGrowthFilter // Áp dụng ngay lọc theo năm
+        });
+        const chartLoadInstance = sdk.createChart({ 
+            chartId: '78b1ddec-ea09-4c53-8e65-381a742291ae', 
+            height: '400px',
+            filter: initialLoadFilter // Áp dụng ngay lọc theo tuần
+        });
 
         [kpiTrafficRef, kpiAlertRef, chartRoleRef, chartGrowthRef, chartLoadRef].forEach(ref => {
             if (ref.current) ref.current.innerHTML = '';
@@ -46,9 +67,10 @@ const DashboardOverview = () => {
         chartLoadInstance.render(chartLoadRef.current).then(() => {
             loadChartRefInstance.current = chartLoadInstance;
         });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Filter Logic: Đã bỏ chart khỏi dependency array, chỉ dựa vào sự thay đổi của User Input (selectedYear)
+    // Filter Logic: Kích hoạt khi người dùng thay đổi lựa chọn (Dropdown)
     useEffect(() => {
         const chart = growthChartRefInstance.current;
         if (chart) {
@@ -142,7 +164,7 @@ const DashboardOverview = () => {
                                 </div>
                                 <div className="mt-3 mt-md-0 d-flex gap-2">
                                     <select className="form-select form-select-sm shadow-none border-orange" value={loadYear} onChange={(e) => setLoadYear(e.target.value)}>
-                                        <option value="2026">2026</option>
+                                        <option value={currentYearStr}>{currentYearStr}</option>
                                         <option value="2025">2025</option>
                                     </select>
                                     <select className="form-select form-select-sm shadow-none border-orange" value={loadWeek} onChange={(e) => setLoadWeek(e.target.value)}>

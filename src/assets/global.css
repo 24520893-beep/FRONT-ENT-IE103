@@ -96,7 +96,7 @@ header .bg-main-orange {
 }
 
 .navbar-logo {
-  height: 90px !important;
+  height: 60px !important;
   width: auto;
   object-fit: contain;
   position: absolute;

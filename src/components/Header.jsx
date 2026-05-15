@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { fetchClient } from '../utils/fetchClient'; // Đã thêm import fetchClient
+import { fetchClient } from '../utils/fetchClient';
 
 export default function Header() {
   const headerT2Ref = useRef(null);
@@ -8,7 +8,6 @@ export default function Header() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  // 1. Đồng bộ thông tin người dùng với Server mỗi khi chuyển trang
   useEffect(() => {
     const syncUser = async () => {
       const token = localStorage.getItem('accessToken');
@@ -18,20 +17,16 @@ export default function Header() {
       }
 
       try {
-        // Đã sửa: Xóa bỏ khai báo token trùng lặp, dùng fetchClient với URL tương đối
         const response = await fetchClient('/api/nguoidung/me');
-        
         if (response.ok) {
           const data = await response.json();
           setUser(data);
-          // Cập nhật lại thông tin mới nhất vào localStorage
           localStorage.setItem('user', JSON.stringify(data));
         }
       } catch (error) {
         console.error("Lỗi đồng bộ thông tin người dùng:", error);
       }
     };
-
     syncUser();
   }, [location]);
 
@@ -114,6 +109,12 @@ export default function Header() {
                       <i className="bi bi-person-badge me-2"></i>Thông tin cá nhân
                     </Link>
                   </li>
+                  <li>
+                    <Link className="dropdown-item py-2" to="/ket-qua-thi">
+                      <i className="bi bi-clipboard2-data me-2 text-primary"></i>Kết quả bài thi
+                    </Link>
+                  </li>
+                  {/* ĐÃ BỎ: Mục Thống kê ở đây */}
                   <li><hr className="dropdown-divider" /></li>
                   <li>
                     <button className="dropdown-item py-2 text-danger" onClick={handleLogout}>
@@ -150,7 +151,13 @@ export default function Header() {
               <li className="nav-item"><NavLink className="nav-link" to="/thu-vien">Thư viện</NavLink></li>
               <li className="nav-item"><NavLink className="nav-link" to="/lo-trinh">Lộ trình</NavLink></li>
               
-              {/* === LOGIC PHÂN QUYỀN HIỂN THỊ MENU === */}
+              {/* Giữ lại mục Thống kê trên thanh điều hướng chính */}
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/thong-ke">
+                  <i className="bi bi-bar-chart-line-fill me-1"></i>Thống kê
+                </NavLink>
+              </li>
+
               {(!user || user.VaiTro === 'HocSinh') && (
                 <li className="nav-item"><NavLink className="nav-link" to="/ho-tro">Hỗ trợ</NavLink></li>
               )}
@@ -170,7 +177,6 @@ export default function Header() {
                   </NavLink>
                 </li>
               )}
-              {/* ======================================= */}
 
               <hr className="text-white d-lg-none" />
               
@@ -181,6 +187,12 @@ export default function Header() {
                       <i className="bi bi-person-badge me-2"></i>Cá nhân: {user.HoTen}
                     </NavLink>
                   </li>
+                  <li className="nav-item d-lg-none">
+                    <NavLink className="nav-link" to="/ket-qua-thi">
+                      <i className="bi bi-clipboard2-data me-2"></i>Kết quả bài thi
+                    </NavLink>
+                  </li>
+                  {/* ĐÃ BỎ: Mục Thống kê ở Mobile list */}
                   <li className="nav-item d-lg-none">
                     <button className="nav-link btn border-0 text-start w-100" onClick={handleLogout}>
                       <i className="bi bi-box-arrow-right me-2"></i>Đăng xuất

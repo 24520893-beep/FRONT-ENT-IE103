@@ -1,0 +1,98 @@
+/* Hiệu ứng xuất hiện nhẹ nhàng khi vào trang */
+.pageContainer {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card chứa bảng kết quả */
+.resultCard {
+    border-radius: 16px !important;
+    overflow: hidden;
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Tinh chỉnh bảng */
+.tableCustom {
+    margin-bottom: 0;
+}
+
+.tableCustom thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #edf2f7;
+    color: #718096;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.tableCustom tbody tr {
+    transition: all 0.2s ease;
+}
+
+.tableCustom tbody tr:hover {
+    background-color: #fffaf5 !important; /* Màu cam cực nhạt khi hover */
+    transform: scale(1.002);
+}
+
+/* Badge điểm số */
+.scoreBadge {
+    min-width: 45px;
+    font-weight: 800 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Trạng thái trống */
+.emptyState {
+    padding: 80px 0;
+    text-align: center;
+}
+
+.emptyIcon {
+    font-size: 4rem;
+    color: #e2e8f0;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+/* Phân trang kiểu mới */
+.paginationCustom {
+    gap: 5px;
+}
+
+.pageLink {
+    border-radius: 10px !important;
+    border: 1px solid #edf2f7 !important;
+    color: #4a5568 !important;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.pageLinkActive {
+    background-color: var(--main-color) !important;
+    border-color: var(--main-color) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(255, 141, 40, 0.3);
+}
+
+.pageLink:hover:not(.pageLinkActive) {
+    background-color: #f7fafc !important;
+    border-color: var(--main-color) !important;
+    color: var(--main-color) !important;
+}
+
+/* Ẩn thanh trượt ngang nhưng vẫn giữ chức năng vuốt trên mobile */
+.tableWrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Ẩn trên Firefox */
+    -ms-overflow-style: none; /* Ẩn trên IE/Edge */
+}
+
+.tableWrapper::-webkit-scrollbar {
+    display: none; /* Ẩn trên Chrome, Safari, Opera */
+}

@@ -32,10 +32,14 @@ import ChiTietTaiLieu from './pages/ThuVien/ChiTietTaiLieu';
 import ChiTietCauHoi from './pages/ThuVien/ChiTietCauHoi';
 import LamBaiThi from './pages/PhongLuyen/LamBaiThi';
 import ThungRac from './pages/ThungRac/ThungRac';
+import KetQuaThi from './pages/KetQuaThi/KetQuaThi';
+import GiaoVienDaXoa from './pages/Admin/GiaoVienDaXoa';
+import ThongKeThiThu from './pages/KetQuaThi/ThongKeThiThu';
 
 import './App.css';
 import QuanLyCauHoi from './pages/Admin/QuanLyCauHoi';
 import QuanLyLoTrinh from './pages/Admin/QuanLyLoTrinh';
+import XemBaiLam from './pages/PhongLuyen/XemBaiLam';
 
 function App() {
   return (
@@ -60,7 +64,9 @@ function App() {
         <Route path="/dang-nhap" element={<DangNhap />} />
         <Route path="/phong-luyen/:id" element={<LamBaiThi />} />
         <Route path="/thung-rac" element={<ThungRac />} />
-
+        <Route path="/ket-qua-thi" element={<KetQuaThi />} />
+        <Route path="/ket-qua-thi/:id" element={<XemBaiLam />} />
+        <Route path="/thong-ke" element={<ThongKeThiThu />} />
 
         <Route path="/thu-vien">
           {/* Trang chính: /thu-vien */}
@@ -79,6 +85,7 @@ function App() {
           <Route path="dethi" element={<QuanLyDeThi />} />
           <Route path="cauhoi" element={<QuanLyCauHoi />} />
           <Route path="lotrinh" element={<QuanLyLoTrinh />} />
+          <Route path="giaovien-daxoa" element={<GiaoVienDaXoa />} />
 
         </Route>
 

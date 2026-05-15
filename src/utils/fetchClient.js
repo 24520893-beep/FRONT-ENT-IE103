@@ -1,8 +1,8 @@
 // Đường dẫn file: src/utils/fetchClient.js
 
 // Lấy URL từ biến môi trường (Vite), mặc định là localhost nếu không có
-// const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const BASE_URL = 'http://localhost:3000'; //dùng để test cloud storage cho nhanh
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// const BASE_URL = 'http://localhost:3000'; //dùng để test cloud storage cho nhanh
 
 export const fetchClient = async (url, options = {}) => {
     // 0. Xử lý URL: Nếu là đường dẫn tương đối thì nối với BASE_URL
