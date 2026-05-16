@@ -52,14 +52,13 @@ const KetQuaThi = () => {
             </div>
 
             <div className={`card ${styles.resultCard}`}>
-                {/* ĐÃ SỬA: Thêm class styles.tableWrapper để ẩn thanh trượt ngang */}
                 <div className={`table-responsive ${styles.tableWrapper}`}>
                     <table className={`table align-middle ${styles.tableCustom}`}>
                         <thead>
                             <tr>
                                 <th className="ps-4 py-3" style={{ minWidth: '200px' }}>Đề thi / Môn học</th>
                                 {userRole !== 'HocSinh' && <th className="py-3" style={{ minWidth: '180px' }}>Thí sinh</th>}
-                                <th className="py-3 text-center" style={{ minWidth: '100px' }}>Điểm số</th>
+                                <th className="py-3 text-center" style={{ minWidth: '150px' }}>Điểm số</th>
                                 <th className="py-3 text-center" style={{ minWidth: '120px' }}>Ngày nộp</th>
                                 <th className="pe-4 py-3 text-end" style={{ minWidth: '140px' }}>Hành động</th>
                             </tr>
@@ -86,7 +85,7 @@ const KetQuaThi = () => {
                                         )}
                                         <td className="text-center">
                                             <span className={`badge ${styles.scoreBadge} ${getScoreBadgeClass(item.DiemSo)}`}>
-                                                {item.DiemSo}
+                                                {item.DiemSo} / 10
                                             </span>
                                         </td>
                                         <td className="text-center text-muted small">

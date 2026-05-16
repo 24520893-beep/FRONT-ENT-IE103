@@ -9,27 +9,26 @@ const LamBaiThi = () => {
     const [userRole, setUserRole] = useState(null);
     const [exam, setExam] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [fetchError, setFetchError] = useState(''); // State xử lý lỗi khi tải đề
+    const [fetchError, setFetchError] = useState(''); 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // QUẢN LÝ THỜI GIAN VÀ ĐÁP ÁN
     const [timeLeft, setTimeLeft] = useState(null);
     const [isTimeUp, setIsTimeUp] = useState(false); 
     const [answers, setAnswers] = useState({});
 
-    // === STATE QUẢN LÝ OVERLAY ===
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [unansweredCount, setUnansweredCount] = useState(0);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [processingMessage, setProcessingMessage] = useState(''); 
     
-    // STATE MỚI: Quản lý Modal Kết quả sau khi nộp bài
     const [resultModal, setResultModal] = useState({
         isOpen: false,
         isSuccess: false,
         score: 0,
+        aiFailed: false, // Thay thế status bằng cờ aiFailed
         message: ''
     });
 
-    // 1. FETCH DỮ LIỆU ĐỀ THI TỪ VIEW & LẤY QUYỀN USER
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
         if (savedUser) {
@@ -68,9 +67,8 @@ const LamBaiThi = () => {
         fetchExam();
     }, [id]);
 
-    // 2. ĐỒNG HỒ ĐẾM NGƯỢC
     useEffect(() => {
-        if (userRole !== 'HocSinh' || timeLeft === null || isSubmitting || isTimeUp) return;
+        if (userRole !== 'HocSinh' || timeLeft === null || isSubmitting || isProcessing || isTimeUp) return;
 
         if (timeLeft <= 0) {
             setIsTimeUp(true); 
@@ -82,13 +80,12 @@ const LamBaiThi = () => {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft, isSubmitting, userRole, isTimeUp]);
+    }, [timeLeft, isSubmitting, isProcessing, userRole, isTimeUp]);
 
-    // Tự động thu bài khi hết giờ
     useEffect(() => {
-        if (isTimeUp && !isSubmitting && !resultModal.isOpen) {
+        if (isTimeUp && !isSubmitting && !isProcessing && !resultModal.isOpen) {
             setShowSubmitModal(false); 
-            handleSubmit(true); // Gửi cờ true để nhận diện tự động nộp do hết giờ
+            handleSubmit(true); 
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isTimeUp]); 
@@ -102,7 +99,6 @@ const LamBaiThi = () => {
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    // 3. XỬ LÝ LƯU ĐÁP ÁN
     const handleAnswerChange = (qId, value) => {
         setAnswers(prev => ({ ...prev, [qId]: value }));
     };
@@ -118,26 +114,25 @@ const LamBaiThi = () => {
 
     const handleFileUpload = (qId, file) => {
         if (!file) return;
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setAnswers(prev => {
-                const currentObj = prev[qId] || { text: '', imageBase64: null, fileName: '' };
-                return { ...prev, [qId]: { ...currentObj, imageBase64: reader.result, fileName: file.name } };
-            });
-        };
-        reader.readAsDataURL(file);
+        if (!file.type.startsWith('image/')) {
+            alert('Chỉ cho phép tải lên tệp hình ảnh (JPG, PNG, JPEG, GIF...).');
+            return;
+        }
+        setAnswers(prev => {
+            const currentObj = prev[qId] || { text: '', file: null, fileName: '' };
+            return { ...prev, [qId]: { ...currentObj, file: file, fileName: file.name } };
+        });
     };
 
     const handleRemoveFile = (qId) => {
         setAnswers(prev => {
             const currentObj = prev[qId] || { text: '' };
-            return { ...prev, [qId]: { ...currentObj, imageBase64: null, fileName: '' } };
+            return { ...prev, [qId]: { ...currentObj, file: null, fileName: '' } };
         });
         const fileInput = document.getElementById(`upload-${qId}`);
         if (fileInput) fileInput.value = '';
     };
 
-    // === HÀM KIỂM TRA TRƯỚC KHI NỘP BÀI (MỞ OVERLAY) ===
     const handlePreSubmit = () => {
         let missingCount = 0;
         
@@ -147,7 +142,7 @@ const LamBaiThi = () => {
                 const arr = answers[q._id] || [];
                 isDone = arr.filter(x => x !== '').length === 4;
             } else if (q.LoaiCauHoi === 'TuLuan') {
-                isDone = !!answers[q._id]?.text || !!answers[q._id]?.imageBase64;
+                isDone = !!answers[q._id]?.text || !!answers[q._id]?.file; 
             } else {
                 isDone = !!answers[q._id];
             }
@@ -159,10 +154,22 @@ const LamBaiThi = () => {
         setShowSubmitModal(true); 
     };
 
-    // 4. LOGIC NỘP BÀI THI & CHẤM ĐIỂM
     const handleSubmit = async (isAutoSubmit = false) => {
         setShowSubmitModal(false); 
         setIsSubmitting(true);
+        setIsProcessing(true); 
+        
+        setProcessingMessage("Hệ thống Trợ lý AI đang phân tích và chấm điểm bài làm...");
+        const timer1 = setTimeout(() => {
+            setProcessingMessage("Hệ thống AI đang phản hồi chậm, xin đợi thêm ít phút...");
+        }, 8000);
+        
+        const timer2 = setTimeout(() => {
+            setProcessingMessage("Hệ thống vẫn đang xử lý, vui lòng không đóng trình duyệt lúc này...");
+        }, 15000);
+
+        const formData = new FormData();
+        formData.append('MaDeThi', exam._id);
 
         const chiTietBaiLam = exam.DanhSachCauHoi.map(q => {
             let luaChon = '';
@@ -176,9 +183,10 @@ const LamBaiThi = () => {
             } 
             else if (q.LoaiCauHoi === 'TuLuan') {
                 const tuLuanObj = answers[q._id] || {};
-                luaChon = tuLuanObj.text || '';
-                if (tuLuanObj.imageBase64) {
-                    luaChon += `\n[Có đính kèm file: ${tuLuanObj.fileName}]`;
+                luaChon = tuLuanObj.text || ''; 
+                
+                if (tuLuanObj.file) {
+                    formData.append(`file_${q._id}`, tuLuanObj.file);
                 }
             }
 
@@ -188,28 +196,46 @@ const LamBaiThi = () => {
             };
         });
 
+        formData.append('ChiTietBaiLam', JSON.stringify(chiTietBaiLam));
+
         try {
             const res = await fetchClient('/api/ketquathithu', {
                 method: 'POST',
-                body: JSON.stringify({
-                    MaDeThi: exam._id,
-                    ChiTietBaiLam: chiTietBaiLam
-                })
+                body: formData
             });
+
+            clearTimeout(timer1);
+            clearTimeout(timer2);
 
             if (res.ok) {
                 const dataRes = await res.json();
                 sessionStorage.removeItem(`exam_${id}_endTime`);
+                setIsProcessing(false);
+                setProcessingMessage("");
                 
-                // MỞ MODAL THÔNG BÁO THÀNH CÔNG THAY VÌ ALERT
-                setResultModal({
-                    isOpen: true,
-                    isSuccess: true,
-                    score: dataRes.DiemSo,
-                    message: isAutoSubmit ? "Đã hết thời gian! Hệ thống đã tự động thu bài của bạn." : "Bài làm của bạn đã được ghi nhận vào hệ thống."
-                });
+                // Nếu Back-end phản hồi aiFailed = true (Nghĩa là AI sập)
+                if (dataRes.aiFailed) {
+                    setResultModal({
+                        isOpen: true,
+                        isSuccess: true,
+                        score: dataRes.DiemSo,
+                        aiFailed: true, // Lưu lại cờ này để UI nhận biết
+                        message: "Trợ lý AI hiện đang quá tải. Phần Tự luận của bạn đã được gửi cho Giáo viên chấm bù."
+                    });
+
+                    // Chờ 5s cho HS đọc thông báo rồi nhảy trang
+                    setTimeout(() => {
+                        navigate(`/ket-qua-thi/${dataRes._id}`);
+                    }, 5000);
+                } else {
+                    // Nếu AI chấm trơn tru, bay thẳng qua trang kết quả
+                    navigate(`/ket-qua-thi/${dataRes._id}`);
+                }
+
             } else {
                 const err = await res.json();
+                setIsProcessing(false);
+                setProcessingMessage("");
                 setResultModal({
                     isOpen: true,
                     isSuccess: false,
@@ -218,6 +244,10 @@ const LamBaiThi = () => {
             }
         } catch (error) {
             console.error(error);
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+            setIsProcessing(false);
+            setProcessingMessage("");
             setResultModal({
                 isOpen: true,
                 isSuccess: false,
@@ -228,7 +258,6 @@ const LamBaiThi = () => {
         }
     };
 
-    // RENDERS
     if (isLoading) return <div className="text-center py-5"><div className="spinner-border text-main-orange"></div></div>;
     
     if (fetchError) return (
@@ -262,7 +291,6 @@ const LamBaiThi = () => {
                 <div className="container mt-4">
                     <div className="row g-4">
                         
-                        {/* CỘT TRÁI: NỘI DUNG CÂU HỎI */}
                         <div className="col-lg-8 col-xl-9 order-2 order-lg-1">
                             {exam.DanhSachCauHoi?.map((q, idx) => (
                                 <div key={q._id} id={`question-${idx}`} className="card shadow-sm border-0 mb-4 p-4">
@@ -278,7 +306,6 @@ const LamBaiThi = () => {
                                         {q.NoiDungCauHoi}
                                     </div>
 
-                                    {/* HIỂN THỊ ẢNH MINH HỌA NẾU CÓ */}
                                     {q.HinhAnhMinhHoa && (
                                         <div className="mb-4 text-center">
                                             <img 
@@ -290,7 +317,6 @@ const LamBaiThi = () => {
                                         </div>
                                     )}
 
-                                    {/* 1. TRẮC NGHIỆM */}
                                     {q.LoaiCauHoi === 'TracNghiem' && q.DanhSachLuaChon && (
                                         <div className="d-flex flex-column gap-3">
                                             {['A', 'B', 'C', 'D'].map((label, optIdx) => (
@@ -308,7 +334,6 @@ const LamBaiThi = () => {
                                         </div>
                                     )}
 
-                                    {/* 2. ĐÚNG / SAI */}
                                     {q.LoaiCauHoi === 'DungSai' && (
                                         <div className="d-flex flex-column gap-3">
                                             {['a', 'b', 'c', 'd'].map((char, dsIdx) => (
@@ -326,7 +351,6 @@ const LamBaiThi = () => {
                                         </div>
                                     )}
 
-                                    {/* 3. ĐIỀN KHUYẾT */}
                                     {q.LoaiCauHoi === 'DienKhuyet' && (
                                         <input 
                                             type="text" 
@@ -337,36 +361,43 @@ const LamBaiThi = () => {
                                         />
                                     )}
 
-                                    {/* 4. TỰ LUẬN */}
                                     {q.LoaiCauHoi === 'TuLuan' && (
                                         <div className="d-flex flex-column gap-3 bg-light p-3 rounded-3 border mt-3">
                                             <label className="fw-bold text-dark">Bài làm của bạn:</label>
                                             <textarea 
                                                 className="form-control shadow-none" 
                                                 rows="5" 
-                                                placeholder="Gõ trực tiếp nội dung bài làm của bạn vào đây..." 
+                                                placeholder="Gõ trực tiếp nội dung văn bản bài làm của bạn vào đây..." 
                                                 value={answers[q._id]?.text || ''} 
                                                 onChange={(e) => handleAnswerChange(q._id, { ...(answers[q._id] || {}), text: e.target.value })}
                                             ></textarea>
                                             
                                             <div className="p-4 bg-white border border-primary border-2 rounded-3 mt-2" style={{ display: 'block' }}>
                                                 <label htmlFor={`upload-${q._id}`} className="form-label fw-bold text-primary mb-3 fs-5">
-                                                    <i className="bi bi-paperclip me-2"></i>Đính kèm tệp bài làm (Hình ảnh hoặc PDF)
+                                                    <i className="bi bi-image me-2"></i>Đính kèm tệp bài làm (Chỉ Hình ảnh)
                                                 </label>
                                                 <input 
                                                     type="file" 
                                                     id={`upload-${q._id}`}
                                                     className="form-control form-control-lg border-primary shadow-sm" 
-                                                    accept="image/*,application/pdf" 
-                                                    onChange={(e) => handleFileUpload(q._id, e.target.files[0])} 
+                                                    accept="image/*" 
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file && !file.type.startsWith('image/')) {
+                                                            alert('Hệ thống chỉ cho phép tải lên định dạng hình ảnh (JPG, PNG, JPEG, GIF...).');
+                                                            e.target.value = '';
+                                                            return;
+                                                        }
+                                                        handleFileUpload(q._id, file);
+                                                    }} 
                                                     style={{ display: 'block', width: '100%' }}
                                                 />
-                                                <small className="text-muted mt-2 d-block">Định dạng hỗ trợ: JPG, PNG, PDF.</small>
+                                                <small className="text-muted mt-2 d-block">Định dạng hỗ trợ: JPG, JPEG, PNG, GIF, WEBP.</small>
                                             </div>
 
                                             {answers[q._id]?.fileName && (
                                                 <div className="d-flex align-items-center bg-white px-3 py-2 rounded shadow-sm border border-success mt-2">
-                                                    <i className={`bi ${answers[q._id].fileName.toLowerCase().endsWith('.pdf') ? 'bi-file-pdf-fill text-danger' : 'bi-image-fill text-success'} fs-4 me-3`}></i>
+                                                    <i className="bi bi-image-fill text-success fs-4 me-3"></i>
                                                     <div className="flex-grow-1 text-truncate fw-bold text-dark" style={{ maxWidth: '75%' }}>
                                                         {answers[q._id].fileName}
                                                     </div>
@@ -380,32 +411,14 @@ const LamBaiThi = () => {
                                                 </div>
                                             )}
 
-                                            {answers[q._id]?.imageBase64 && (
+                                            {answers[q._id]?.file && (
                                                 <div className="mt-3 text-center bg-white p-2 rounded border shadow-sm">
-                                                    {answers[q._id].fileName.toLowerCase().endsWith('.pdf') ? (
-                                                        <object 
-                                                            data={answers[q._id].imageBase64} 
-                                                            type="application/pdf" 
-                                                            width="100%" 
-                                                            height="500px" 
-                                                            className="rounded"
-                                                        >
-                                                            <div className="p-4 text-center">
-                                                                <i className="bi bi-file-earmark-pdf text-danger" style={{ fontSize: '3rem' }}></i>
-                                                                <p className="text-muted mt-3 mb-1">Trình duyệt của bạn không hỗ trợ xem trước PDF.</p>
-                                                                <a href={answers[q._id].imageBase64} download={answers[q._id].fileName} className="btn btn-primary btn-sm mt-2">
-                                                                    Tải file xuống để xem
-                                                                </a>
-                                                            </div>
-                                                        </object>
-                                                    ) : (
-                                                        <img 
-                                                            src={answers[q._id].imageBase64} 
-                                                            alt="Preview bài làm" 
-                                                            className="img-fluid rounded" 
-                                                            style={{ maxHeight: '400px', objectFit: 'contain' }} 
-                                                        />
-                                                    )}
+                                                    <img 
+                                                        src={URL.createObjectURL(answers[q._id].file)} 
+                                                        alt="Preview bài làm" 
+                                                        className="img-fluid rounded" 
+                                                        style={{ maxHeight: '400px', objectFit: 'contain' }} 
+                                                    />
                                                 </div>
                                             )}
                                         </div>
@@ -414,11 +427,9 @@ const LamBaiThi = () => {
                             ))}
                         </div>
 
-                        {/* CỘT PHẢI: MAP CÂU HỎI TRỰC QUAN & ĐỒNG HỒ NỘP BÀI */}
                         <div className="col-lg-4 col-xl-3 order-1 order-lg-2 mb-4 mb-lg-0">
                             <div className="sticky-top" style={{ top: '150px', zIndex: 900 }}>
                                 
-                                {/* CARD: ĐỒNG HỒ VÀ NỘP BÀI */}
                                 <div className="card shadow-sm border-0 mb-3">
                                     <div className="card-body text-center p-4">
                                         {userRole === 'HocSinh' ? (
@@ -430,9 +441,9 @@ const LamBaiThi = () => {
                                                 <button 
                                                     className="btn btn-main-orange text-white fw-bold w-100 py-3 rounded-pill shadow" 
                                                     onClick={handlePreSubmit} 
-                                                    disabled={isSubmitting || isTimeUp}
+                                                    disabled={isSubmitting || isTimeUp || isProcessing}
                                                 >
-                                                    {isSubmitting ? (
+                                                    {isSubmitting || isProcessing ? (
                                                         <><span className="spinner-border spinner-border-sm me-2"></span> ĐANG NỘP BÀI...</>
                                                     ) : (
                                                         <><i className="bi bi-send-check-fill me-2"></i> NỘP BÀI NGAY</>
@@ -449,7 +460,6 @@ const LamBaiThi = () => {
                                     </div>
                                 </div>
 
-                                {/* CARD: BẢNG TIẾN ĐỘ */}
                                 <div className="card shadow-sm border-0">
                                     <div className="card-header bg-white border-bottom-0 pt-4 pb-2">
                                         <h6 className="fw-bold mb-0">Bảng tiến độ</h6>
@@ -462,7 +472,7 @@ const LamBaiThi = () => {
                                                     const arr = answers[q._id] || [];
                                                     isDone = arr.filter(x => x !== '').length === 4;
                                                 } else if (q.LoaiCauHoi === 'TuLuan') {
-                                                    isDone = !!answers[q._id]?.text || !!answers[q._id]?.imageBase64;
+                                                    isDone = !!answers[q._id]?.text || !!answers[q._id]?.file;
                                                 } else {
                                                     isDone = !!answers[q._id];
                                                 }
@@ -490,7 +500,7 @@ const LamBaiThi = () => {
                 </div>
             </main>
 
-            {/* === OVERLAY 1: XÁC NHẬN TRƯỚC KHI NỘP BÀI === */}
+            {/* OVERLAY XÁC NHẬN TRƯỚC KHI NỘP BÀI */}
             {showSubmitModal && (
                 <div 
                     className="d-flex align-items-center justify-content-center" 
@@ -540,7 +550,29 @@ const LamBaiThi = () => {
                 </div>
             )}
 
-            {/* === OVERLAY 2: THÔNG BÁO KẾT QUẢ ĐIỂM SỐ (THAY THẾ CHO ALERT) === */}
+            {/* OVERLAY CHỜ AI XỬ LÝ VỚI TIN NHẮN ĐỘNG */}
+            {isProcessing && processingMessage !== '' && (
+                <div 
+                    className="d-flex align-items-center justify-content-center" 
+                    style={{
+                        position: 'fixed', 
+                        top: 0, left: 0, right: 0, bottom: 0, 
+                        backgroundColor: 'rgba(0,0,0,0.8)', 
+                        zIndex: 10000,
+                        backdropFilter: 'blur(5px)'
+                    }}
+                >
+                    <div className="bg-white p-4 p-md-5 rounded-4 shadow-lg text-center animate__animated animate__pulse animate__infinite" style={{ maxWidth: '400px', width: '90%' }}>
+                        <div className="spinner-border text-main-orange mb-3" style={{ width: '3rem', height: '3rem' }}></div>
+                        <h4 className="fw-bold text-dark">Đang xử lý bài làm</h4>
+                        <p className="text-primary fw-bold mt-3 mb-0 fs-6 animate__animated animate__fadeIn">
+                            {processingMessage}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* OVERLAY KẾT QUẢ NỘP BÀI KHI AI THẤT BẠI */}
             {resultModal.isOpen && (
                 <div 
                     className="d-flex align-items-center justify-content-center" 
@@ -556,24 +588,27 @@ const LamBaiThi = () => {
                         {resultModal.isSuccess ? (
                             <>
                                 <div className="mb-4">
-                                    <i className="bi bi-trophy-fill text-warning drop-shadow" style={{ fontSize: '6rem' }}></i>
+                                    <i className="bi bi-check-circle-fill text-success drop-shadow" style={{ fontSize: '6rem' }}></i>
                                 </div>
                                 <h3 className="fw-bold text-dark mb-2">Nộp bài thành công!</h3>
-                                <p className="text-muted mb-4">{resultModal.message}</p>
                                 
-                                <div className="bg-light rounded-4 p-4 mb-4 border shadow-sm">
-                                    <p className="text-muted mb-1 fw-bold text-uppercase" style={{ letterSpacing: '1px' }}>Điểm hệ thống tự chấm</p>
-                                    <h1 className="display-2 fw-bold text-main-orange mb-0">
-                                        {resultModal.score}<span className="fs-3 text-muted">/10</span>
+                                <div className="alert alert-warning mt-3 mb-4 small text-start shadow-sm">
+                                    <i className="bi bi-info-circle-fill me-2"></i>
+                                    {resultModal.message}
+                                </div>
+
+                                <div className="bg-light rounded-4 p-3 mb-4 border shadow-sm">
+                                    {/* ĐÃ SỬA: BẮT THEO CỜ aiFailed */}
+                                    <p className="text-muted mb-1 fw-bold text-uppercase" style={{ letterSpacing: '1px' }}>
+                                        {resultModal.aiFailed ? 'Điểm trắc nghiệm (Tạm tính)' : 'Điểm hệ thống tự chấm'}
+                                    </p>
+                                    <h1 className="display-4 fw-bold text-main-orange mb-0">
+                                        {resultModal.score}<span className="fs-4 text-muted">/10</span>
                                     </h1>
                                 </div>
                                 
-                                <button 
-                                    className="btn btn-main-orange text-white fw-bold rounded-pill px-5 py-3 w-100 shadow" 
-                                    onClick={() => navigate('/ket-qua-thi')}
-                                >
-                                    <i className="bi bi-graph-up-arrow me-2"></i>Xem chi tiết kết quả
-                                </button>
+                                <div className="spinner-border spinner-border-sm text-secondary me-2"></div>
+                                <span className="text-muted small">Đang chuyển hướng đến trang kết quả...</span>
                             </>
                         ) : (
                             <>

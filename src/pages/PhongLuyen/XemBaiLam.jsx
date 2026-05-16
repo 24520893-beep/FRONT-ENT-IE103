@@ -9,7 +9,6 @@ const XemBaiLam = () => {
     const [reviewData, setReviewData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // 1. FETCH DỮ LIỆU TỪ VIEW (Đã sửa đường dẫn khớp với report.routes.js)
     useEffect(() => {
         const fetchResultDetail = async () => {
             try {
@@ -39,14 +38,13 @@ const XemBaiLam = () => {
     if (isLoading) return <div className="text-center py-5"><div className="spinner-border text-main-orange"></div></div>;
     if (reviewData.length === 0) return null;
 
-    // Lấy thông tin chung từ bản ghi đầu tiên
-    const DiemSo = reviewData[0]?.DiemSoTong || 0;
+    // Ưu tiên DiemSo gốc từ hệ thống trước, nếu không có mới lấy DiemSoTong của Report
+    const DiemSo = reviewData[0]?.DiemSo ?? reviewData[0]?.DiemSoTong ?? 0;
     const HoTenHS = reviewData[0]?.HoTenHocSinh || "Học sinh";
     const TenDe = reviewData[0]?.TenDeThi || "Bài thi thử";
 
     return (
         <main className="bg-light min-vh-100 pb-5">
-            {/* THANH TOP BAR CỐ ĐỊNH */}
             <div className="bg-white shadow-sm sticky-top" style={{ zIndex: 1000, marginTop: '78px' }}>
                 <div className="container py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                     <h5 className="fw-bold text-dark mb-2 mb-md-0 text-truncate me-3">
@@ -55,8 +53,10 @@ const XemBaiLam = () => {
                     </h5>
 
                     <div className="d-flex align-items-center gap-3">
-                        <div className="fs-5 fw-bold text-dark bg-light px-4 py-2 rounded-pill border shadow-sm">
-                            Tổng điểm: <span className={DiemSo >= 5 ? "text-success" : "text-danger"}>{DiemSo}</span> <span className="text-muted fs-6">/ 10</span>
+                        <div className="fs-5 fw-bold text-dark bg-light px-4 py-2 rounded-pill border shadow-sm d-flex align-items-center">
+                            Tổng điểm: 
+                            <span className={`ms-2 ${DiemSo >= 5 ? "text-success" : "text-danger"}`}>{DiemSo}</span> 
+                            <span className="text-muted ms-1 fs-6">/ 10</span>
                         </div>
                         <Link to="/ket-qua-thi" className="btn btn-outline-secondary fw-bold px-4 rounded-pill shadow-sm">
                             <i className="bi bi-arrow-left me-2"></i>Quay lại
@@ -76,12 +76,20 @@ const XemBaiLam = () => {
                         </div>
 
                         {reviewData.map((item, idx) => {
+                            // GIẢI PHÁP PHÒNG THỦ: Trích xuất an toàn từ root hoặc sub-document ChiTietBaiLam
+                            const diemDatDuoc = item.DiemDatDuoc ?? item.ChiTietBaiLam?.DiemDatDuoc ?? 0;
+                            const luaChonCuaHocSinh = item.LuaChonCuaHocSinh ?? item.ChiTietBaiLam?.LuaChonCuaHocSinh ?? "";
+                            const ketQuaDungSai = item.KetQuaDungSai ?? item.ChiTietBaiLam?.KetQuaDungSai ?? false;
+
                             const isTuLuan = item.LoaiCauHoi === 'TuLuan';
-                            const isCorrect = item.KetQuaDungSai;
+                            const isCorrect = ketQuaDungSai;
+                            
+                            // Tô viền tùy theo trạng thái câu hỏi
+                            let borderColor = isCorrect ? 'border-success' : 'border-danger';
+                            if (isTuLuan && diemDatDuoc > 0) borderColor = 'border-success';
 
                             return (
-                                <div key={idx} id={`question-${idx}`} className={`card shadow-sm mb-4 p-4 border-start border-4 ${isCorrect ? 'border-success' : isTuLuan ? 'border-warning' : 'border-danger'}`}>
-                                    {/* Header câu hỏi */}
+                                <div key={idx} id={`question-${idx}`} className={`card shadow-sm mb-4 p-4 border-start border-4 ${borderColor}`}>
                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                         <div className="d-flex align-items-center flex-wrap gap-2">
                                             <h5 className="fw-bold text-dark mb-0">Câu {idx + 1}</h5>
@@ -92,7 +100,9 @@ const XemBaiLam = () => {
                                         </div>
                                         <div>
                                             {isTuLuan ? (
-                                                <span className="badge bg-warning text-dark px-3 py-2"><i className="bi bi-clock-history me-1"></i>Chờ chấm</span>
+                                                <span className={`badge px-3 py-2 ${diemDatDuoc > 0 ? 'bg-success' : 'bg-danger'}`}>
+                                                    Điểm AI chấm: {diemDatDuoc}
+                                                </span>
                                             ) : isCorrect ? (
                                                 <span className="badge bg-success px-3 py-2"><i className="bi bi-check-circle me-1"></i>Đúng</span>
                                             ) : (
@@ -101,19 +111,15 @@ const XemBaiLam = () => {
                                         </div>
                                     </div>
 
-                                    {/* Nội dung câu hỏi */}
                                     <div className="fs-5 text-dark mb-3 lh-base" style={{ whiteSpace: 'pre-line' }}>
                                         {item.NoiDungCauHoi}
                                     </div>
 
-                                    {/* Hình ảnh minh họa */}
                                     {item.HinhAnhMinhHoa && (
                                         <div className="mb-4 text-center">
                                             <img src={item.HinhAnhMinhHoa} alt="Minh họa" className="img-fluid rounded shadow-sm border" style={{ maxHeight: '350px', objectFit: 'contain' }} />
                                         </div>
                                     )}
-
-                                    {/* --- PHÂN LOẠI HIỂN THỊ THEO LOẠI CÂU HỎI --- */}
 
                                     {/* 1. TRẮC NGHIỆM */}
                                     {item.LoaiCauHoi === 'TracNghiem' && item.DanhSachLuaChon && (
@@ -123,7 +129,7 @@ const XemBaiLam = () => {
                                                 if (!choiceText) return null;
 
                                                 const isCorrectChoice = label === item.DapAnChinhXac;
-                                                const isUserChoice = label === item.LuaChonCuaHocSinh;
+                                                const isUserChoice = label === luaChonCuaHocSinh;
 
                                                 let bgClass = 'bg-light border';
                                                 if (isCorrectChoice) bgClass = 'bg-success-subtle border-success text-dark fw-bold shadow-sm';
@@ -140,12 +146,11 @@ const XemBaiLam = () => {
                                         </div>
                                     )}
 
-                                    {/* 2. ĐÚNG / SAI - TỐI ƯU CHO MỆNH ĐỀ NỐI LIỀN TRONG ĐỀ BÀI */}
+                                    {/* 2. ĐÚNG / SAI */}
                                     {item.LoaiCauHoi === 'DungSai' && (() => {
-                                        // Tách chuỗi đáp án: Chấp nhận dấu phẩy, gạch ngang hoặc khoảng cách
                                         const regexSplit = /[,\-\s]+/;
-                                        const userAnsArr = item.LuaChonCuaHocSinh
-                                            ? item.LuaChonCuaHocSinh.split(regexSplit).filter(x => x.trim() !== '')
+                                        const userAnsArr = luaChonCuaHocSinh
+                                            ? luaChonCuaHocSinh.split(regexSplit).filter(x => x.trim() !== '')
                                             : [];
                                         const correctAnsArr = item.DapAnChinhXac
                                             ? item.DapAnChinhXac.split(regexSplit).filter(x => x.trim() !== '')
@@ -208,7 +213,7 @@ const XemBaiLam = () => {
                                                 <div className="col-md-6 border-end">
                                                     <span className="small text-muted fw-bold text-uppercase">Bài làm của bạn:</span>
                                                     <div className={`fs-5 fw-bold mt-1 ${isCorrect ? 'text-success' : 'text-danger'}`}>
-                                                        {item.LuaChonCuaHocSinh || "[Bỏ trống]"}
+                                                        {luaChonCuaHocSinh || "[Bỏ trống]"}
                                                     </div>
                                                 </div>
                                                 <div className="col-md-6 ps-md-4">
@@ -219,21 +224,21 @@ const XemBaiLam = () => {
                                         </div>
                                     )}
 
-                                    {/* 4. TỰ LUẬN */}
+                                    {/* 4. TƯ LUẬN */}
                                     {isTuLuan && (
                                         <div className="bg-white border rounded-3 p-4 mb-3 shadow-sm">
                                             <h6 className="fw-bold small text-muted text-uppercase mb-3 border-bottom pb-2">Nội dung bài làm:</h6>
                                             <p className="mb-0 text-dark lh-lg" style={{ whiteSpace: 'pre-wrap' }}>
-                                                {item.LuaChonCuaHocSinh || <span className="text-muted fst-italic">Thí sinh không nộp nội dung cho câu hỏi này.</span>}
+                                                {luaChonCuaHocSinh || <span className="text-muted fst-italic">Bỏ trống (0 điểm).</span>}
                                             </p>
                                         </div>
                                     )}
 
-                                    {/* GIẢI THÍCH / GỢI Ý (Bổ sung cho tất cả loại câu hỏi) */}
+                                    {/* GIẢI THÍCH / GỢI Ý */}
                                     {item.DapAnGoiY && (
                                         <div className="mt-3 p-3 bg-info-subtle border-start border-info border-4 rounded-end shadow-sm">
                                             <div className="fw-bold text-info-emphasis mb-2">
-                                                <i className="bi bi-lightbulb-fill me-2"></i>Hướng dẫn giải chi tiết:
+                                                <i className="bi bi-lightbulb-fill me-2"></i>Hướng dẫn giải chi tiết / Gợi ý chấm:
                                             </div>
                                             <p className="mb-0 small text-dark lh-base" style={{ whiteSpace: 'pre-wrap' }}>
                                                 {item.DapAnGoiY}
@@ -245,7 +250,7 @@ const XemBaiLam = () => {
                         })}
                     </div>
 
-                    {/* CỘT PHẢI: BẢN ĐỒ CÂU HỎI (Sticky) */}
+                    {/* CỘT PHẢI: BẢN ĐỒ CÂU HỎI */}
                     <div className="col-lg-4 col-xl-3 d-none d-lg-block">
                         <div className="card shadow-sm border-0 sticky-top" style={{ top: '160px' }}>
                             <div className="card-header bg-white border-bottom-0 pt-4 pb-2 text-center">
@@ -254,9 +259,15 @@ const XemBaiLam = () => {
                             <div className="card-body">
                                 <div className="d-flex flex-wrap gap-2 justify-content-center mb-4">
                                     {reviewData.map((item, idx) => {
-                                        const isCorrectNav = item.KetQuaDungSai;
+                                        const diemDatDuocNav = item.DiemDatDuoc ?? item.ChiTietBaiLam?.DiemDatDuoc ?? 0;
+                                        const ketQuaDungSaiNav = item.KetQuaDungSai ?? item.ChiTietBaiLam?.KetQuaDungSai ?? false;
+
+                                        const isCorrectNav = ketQuaDungSaiNav;
                                         const isTuLuanNav = item.LoaiCauHoi === 'TuLuan';
-                                        let btnClass = isTuLuanNav ? 'btn-warning' : (isCorrectNav ? 'btn-success' : 'btn-danger');
+                                        
+                                        let btnClass = 'btn-danger';
+                                        if (isTuLuanNav && diemDatDuocNav > 0) btnClass = 'btn-success';
+                                        else if (isCorrectNav) btnClass = 'btn-success';
 
                                         return (
                                             <a key={idx} href={`#question-${idx}`}
@@ -269,13 +280,10 @@ const XemBaiLam = () => {
                                 </div>
                                 <div className="pt-3 border-top x-small text-muted">
                                     <div className="d-flex align-items-center mb-2">
-                                        <span className="badge bg-success me-2" style={{ width: 12, height: 12, padding: 0 }}> </span> Trả lời đúng
+                                        <span className="badge bg-success me-2" style={{ width: 12, height: 12, padding: 0 }}> </span> Trả lời đúng / Có điểm
                                     </div>
                                     <div className="d-flex align-items-center mb-2">
-                                        <span className="badge bg-danger me-2" style={{ width: 12, height: 12, padding: 0 }}> </span> Trả lời sai
-                                    </div>
-                                    <div className="d-flex align-items-center">
-                                        <span className="badge bg-warning me-2" style={{ width: 12, height: 12, padding: 0 }}> </span> Tự luận / Chờ chấm
+                                        <span className="badge bg-danger me-2" style={{ width: 12, height: 12, padding: 0 }}> </span> Trả lời sai / Trống
                                     </div>
                                 </div>
                             </div>

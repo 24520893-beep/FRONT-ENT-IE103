@@ -3,6 +3,17 @@ import { fetchClient } from '../../utils/fetchClient';
 // Bạn có thể tái sử dụng file CSS của trang GiaoVien nếu chung style
 import styles from '../NguoiDung/GiaoVien.module.css'; 
 
+// Hàm tính toán số ngày còn lại (Hạn sử dụng 30 ngày)
+const calculateDaysLeft = (deletedAt) => {
+  if (!deletedAt) return 30; 
+  const deleteDate = new Date(deletedAt);
+  const expiryDate = new Date(deleteDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const currentDate = new Date();
+  const diffTime = expiryDate - currentDate;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays > 0 ? diffDays : 0;
+};
+
 const GiaoVienDaXoa = () => {
   const [teachers, setTeachers] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -164,52 +175,72 @@ const GiaoVienDaXoa = () => {
               <>
                 <div className="row g-4 mb-4">
                   {teachers.length > 0 ? (
-                    teachers.map((teacher) => (
-                      <div key={teacher._id} className="col-12 col-md-6 col-xl-4 d-flex">
-                        <div className="card w-100 border-0 shadow-sm position-relative">
-                          <div className="card-body p-4 d-flex flex-column">
-                            <div className="d-flex align-items-center justify-content-between mb-3">
-                                <span className="badge bg-danger px-3 py-2 fw-normal"><i className="bi bi-slash-circle me-1"></i> Đã vô hiệu hóa</span>
-                                {teacher.NgayXoa && (
-                                    <span className="text-muted small"><i className="bi bi-clock-history me-1"></i> Xóa lúc: {new Date(teacher.NgayXoa).toLocaleDateString('vi-VN')}</span>
-                                )}
-                            </div>
+                    teachers.map((teacher) => {
+                      // Tính toán số ngày còn lại
+                      const daysLeft = calculateDaysLeft(teacher.NgayXoa);
 
-                            <div className="d-flex align-items-center mb-3">
-                              <div className="me-3 opacity-50">
-                                {teacher.Avatar ? (
-                                  <img src={teacher.Avatar} alt={teacher.HoTen} className="rounded-circle border" style={{ width: '60px', height: '60px', objectFit: 'cover', filter: 'grayscale(100%)' }} />
+                      return (
+                        <div key={teacher._id} className="col-12 col-md-6 col-xl-4 d-flex">
+                          <div className="card w-100 border-0 shadow-sm position-relative">
+                            <div className="card-body p-4 d-flex flex-column">
+                              <div className="d-flex align-items-center justify-content-between mb-3">
+                                  <span className="badge bg-danger px-3 py-2 fw-normal"><i className="bi bi-slash-circle me-1"></i> Đã vô hiệu hóa</span>
+                                  {teacher.NgayXoa && (
+                                      <span className="text-muted small"><i className="bi bi-clock-history me-1"></i> Xóa lúc: {new Date(teacher.NgayXoa).toLocaleDateString('vi-VN')}</span>
+                                  )}
+                              </div>
+
+                              <div className="d-flex align-items-center mb-3">
+                                <div className="me-3 opacity-50">
+                                  {teacher.Avatar ? (
+                                    <img src={teacher.Avatar} alt={teacher.HoTen} className="rounded-circle border" style={{ width: '60px', height: '60px', objectFit: 'cover', filter: 'grayscale(100%)' }} />
+                                  ) : (
+                                    <i className="bi bi-person-badge text-secondary" style={{ fontSize: '3.5rem' }}></i>
+                                  )}
+                                </div>
+                                <div>
+                                  <h5 className="card-title fw-bold text-dark mb-1 text-truncate" style={{ maxWidth: '200px' }}>{teacher.HoTen}</h5>
+                                  <p className="text-muted mb-0 small text-truncate" style={{ maxWidth: '200px' }}>{teacher.Email}</p>
+                                  <span className="badge bg-secondary mt-2">{teacher.MonHoc || 'Chưa cập nhật môn'}</span>
+                                </div>
+                              </div>
+
+                              {/* BỔ SUNG: Hiển thị đếm ngược thời gian tự động xóa */}
+                              <div className="mb-3 mt-2 small text-center">
+                                {daysLeft > 0 ? (
+                                  <span className={`px-3 py-2 rounded d-inline-block w-100 ${daysLeft <= 5 ? 'bg-danger-subtle text-danger fw-bold' : 'bg-warning-subtle text-dark'}`}>
+                                    <i className="bi bi-hourglass-split me-1"></i>
+                                    Tài khoản sẽ bị xóa vĩnh viễn sau: {daysLeft} ngày
+                                  </span>
                                 ) : (
-                                  <i className="bi bi-person-badge text-secondary" style={{ fontSize: '3.5rem' }}></i>
+                                  <span className="px-3 py-2 rounded bg-danger-subtle text-danger fw-bold d-inline-block w-100">
+                                    <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                                    Đang chờ xóa vĩnh viễn...
+                                  </span>
                                 )}
                               </div>
-                              <div>
-                                <h5 className="card-title fw-bold text-dark mb-1 text-truncate" style={{ maxWidth: '200px' }}>{teacher.HoTen}</h5>
-                                <p className="text-muted mb-0 small text-truncate" style={{ maxWidth: '200px' }}>{teacher.Email}</p>
-                                <span className="badge bg-secondary mt-2">{teacher.MonHoc || 'Chưa cập nhật môn'}</span>
-                              </div>
-                            </div>
 
-                            <div className="mt-auto d-flex gap-2 border-top pt-3">
-                              <button 
-                                className="btn btn-outline-success flex-grow-1 fw-bold"
-                                onClick={() => triggerRestore(teacher._id, teacher.HoTen)}
-                              >
-                                <i className="bi bi-arrow-counterclockwise me-1"></i> Khôi phục
-                              </button>
-                              
-                              <button 
-                                className="btn btn-danger px-3 flex-shrink-0"
-                                onClick={() => triggerForceDelete(teacher._id, teacher.HoTen)}
-                                title="Xóa vĩnh viễn"
-                              >
-                                <i className="bi bi-x-circle-fill"></i>
-                              </button>
+                              <div className="mt-auto d-flex gap-2 border-top pt-3">
+                                <button 
+                                  className="btn btn-outline-success flex-grow-1 fw-bold"
+                                  onClick={() => triggerRestore(teacher._id, teacher.HoTen)}
+                                >
+                                  <i className="bi bi-arrow-counterclockwise me-1"></i> Khôi phục
+                                </button>
+                                
+                                <button 
+                                  className="btn btn-danger px-3 flex-shrink-0"
+                                  onClick={() => triggerForceDelete(teacher._id, teacher.HoTen)}
+                                  title="Xóa vĩnh viễn"
+                                >
+                                  <i className="bi bi-x-circle-fill"></i>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="col-12 text-center py-5">
                        <i className="bi bi-person-check text-muted opacity-25" style={{ fontSize: '4rem' }}></i>

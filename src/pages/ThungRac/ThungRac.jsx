@@ -3,6 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import styles from './ThungRac.module.css';
 import { fetchClient } from '../../utils/fetchClient'; 
 
+// Hàm tính toán số ngày còn lại (Hạn sử dụng 30 ngày)
+const calculateDaysLeft = (deletedAt) => {
+  if (!deletedAt) return 30; 
+  const deleteDate = new Date(deletedAt);
+  const expiryDate = new Date(deleteDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const currentDate = new Date();
+  const diffTime = expiryDate - currentDate;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays > 0 ? diffDays : 0;
+};
+
 const ThungRac = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -111,7 +122,7 @@ const ThungRac = () => {
 
   const executeAction = async () => {
     const { id, trashType, actionType } = confirmModal;
-    setConfirmModal({ ...confirmModal, isOpen: false }); // Đóng modal ngay
+    setConfirmModal({ ...confirmModal, isOpen: false }); 
 
     try {
       let response;
@@ -122,7 +133,6 @@ const ThungRac = () => {
       }
 
       if (response.ok) {
-        // alert(actionType === 'RESTORE' ? "Khôi phục thành công!" : "Đã xóa vĩnh viễn!");
         if (trashItems.length === 1 && currentPage > 1) {
           setCurrentPage(currentPage - 1);
         } else {
@@ -254,6 +264,8 @@ const ThungRac = () => {
                   {trashItems.length > 0 ? (
                     trashItems.map((item) => {
                       const displayInfo = getItemDisplayInfo(item);
+                      const daysLeft = calculateDaysLeft(item.NgayXoa); // Gọi hàm tính toán
+
                       return (
                         <div key={`${item.trashType}-${item._id}`} className="col-12 col-md-6 col-lg-4 d-flex">
                           <div className={`card w-100 shadow-sm ${styles.trashCard}`}>
@@ -272,6 +284,21 @@ const ThungRac = () => {
                               <h5 className="card-title fw-bold text-dark mb-3 lh-base">
                                 {displayInfo.title}
                               </h5>
+
+                              {/* BỔ SUNG: Hiển thị đếm ngược thời gian tự động xóa */}
+                              <div className="mb-3 small">
+                                {daysLeft > 0 ? (
+                                  <span className={`px-2 py-1 rounded ${daysLeft <= 5 ? 'bg-danger-subtle text-danger fw-bold' : 'bg-warning-subtle text-dark'}`}>
+                                    <i className="bi bi-hourglass-split me-1"></i>
+                                    Tự động xóa sau: {daysLeft} ngày
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 rounded bg-danger-subtle text-danger fw-bold">
+                                    <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                                    Đang chờ xóa vĩnh viễn...
+                                  </span>
+                                )}
+                              </div>
 
                               <div className="mt-auto d-flex gap-2">
                                 <button 
