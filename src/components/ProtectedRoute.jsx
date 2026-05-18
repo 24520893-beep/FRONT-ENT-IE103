@@ -1,7 +1,7 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = () => {
   // Lấy token thực tế từ Local Storage
   const token = localStorage.getItem('accessToken');
 
@@ -10,9 +10,8 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/dang-nhap" replace />;
   }
 
-  // Nếu có token, cho phép truy cập.
-  // Back-end và fetchClient sẽ đảm nhiệm việc kiểm tra token hợp lệ ở các Request API sau đó.
-  return children;
+  // Nếu CÓ token, dùng thẻ <Outlet /> để render các trang con bên trong (PhongLuyen, LoTrinh...)
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

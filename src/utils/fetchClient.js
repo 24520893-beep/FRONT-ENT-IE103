@@ -35,21 +35,19 @@ export const fetchClient = async (url, options = {}) => {
         headers,
       });
   
-      // 4. Xử lý lỗi 401 (Hết hạn phiên đăng nhập)
-      if (response.status === 401) {
-        console.warn("🔒 Phiên đăng nhập đã hết hạn. Đang đăng xuất...");
+      // 4. Xử lý lỗi 401 (Hết hạn phiên) hoặc 403 (Không có quyền truy cập)
+      if (response.status === 401 || response.status === 403) {
+        console.warn("🔒 Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Đang chuyển hướng im lặng...");
         
         // Dọn dẹp rác trong LocalStorage
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
         
-        // Thông báo cho người dùng
-        alert("Phiên đăng nhập của bạn đã kết thúc. Vui lòng đăng nhập lại!");
-        
-        // Điều hướng thẳng về trang đăng nhập
+        // Điều hướng thẳng về trang đăng nhập (UX mượt mà, không dùng alert chặn luồng)
         window.location.href = '/dang-nhap';
         
-        return response; // Trả về để tránh rơi vào catch lỗi mạng không cần thiết
+        // CẮT ĐỨT PROMISE: Trả về reject để component gọi API không chạy tiếp lệnh .json() gây lỗi
+        return Promise.reject(new Error("Unauthorized Access")); 
       }
   
       return response;

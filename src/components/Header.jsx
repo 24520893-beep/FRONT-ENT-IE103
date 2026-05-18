@@ -52,32 +52,32 @@ export default function Header() {
       if (window.innerWidth < 992) {
         headerT2Ref.current.style.transform = `translateY(0%)`;
         headerT2Ref.current.style.opacity = '1';
-        return; 
+        return;
       }
       let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       let ratio = scrollTop / threshold;
       if (ratio > 1) ratio = 1;
       if (ratio < 0) ratio = 0;
-      
+
       headerT2Ref.current.style.transform = `translateY(-${ratio * 100}%)`;
       headerT2Ref.current.style.opacity = (1 - ratio).toString();
     };
-    
+
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleScroll);
     handleScroll();
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleScroll);
-    }; 
+    };
   }, []);
 
   return (
-    <header className="fixed-top border-0"> 
-      
+    <header className="fixed-top border-0">
+
       {/* Navbar Tầng 1 */}
-      <nav className="navbar navbar-light bg-white py-3 border-bottom shadow-sm" 
-           style={{ zIndex: 10, position: 'relative' }}>
+      <nav className="navbar navbar-light bg-white py-3 border-bottom shadow-sm"
+        style={{ zIndex: 10, position: 'relative' }}>
         <div className="container">
           <Link className="navbar-brand" to="/">
             <img src="/img/logo.jpg" alt="HOCMOI Logo" className="navbar-logo d-lg-none" />
@@ -94,10 +94,10 @@ export default function Header() {
           <div className="d-none d-lg-flex gap-2 align-items-center">
             {user ? (
               <div className="dropdown">
-                <button 
-                  className="btn border-0 d-flex align-items-center gap-2 dropdown-toggle" 
-                  type="button" 
-                  id="userMenu" 
+                <button
+                  className="btn border-0 d-flex align-items-center gap-2 dropdown-toggle"
+                  type="button"
+                  id="userMenu"
                   data-bs-toggle="dropdown"
                 >
                   <i className="bi bi-person-circle fs-3 text-main-orange"></i>
@@ -114,7 +114,39 @@ export default function Header() {
                       <i className="bi bi-clipboard2-data me-2 text-primary"></i>Kết quả bài thi
                     </Link>
                   </li>
-                  {/* ĐÃ BỎ: Mục Thống kê ở đây */}
+
+                  {/* Menu Dropdown Học sinh trên Desktop */}
+                  {user?.VaiTro === 'HocSinh' && (
+                    <>
+                      <li>
+                        <Link className="dropdown-item py-2" to="/phan-tich-hoc-tap">
+                          <i className="bi bi-clipboard-data-fill me-2 text-success"></i>Phân tích học tập
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item py-2" to="/tiendo-lotrinh">
+                          <i className="bi bi-activity me-2 text-warning"></i>Theo dõi tiến độ
+                        </Link>
+                      </li>
+                    </>
+                  )}
+
+                  {user?.VaiTro === 'GiaoVien' && (
+                    <li>
+                      <Link className="dropdown-item py-2" to="/hoc-sinh-sa-sut">
+                        <i className="bi bi-life-preserver me-2 text-danger"></i>Hỗ trợ học sinh
+                      </Link>
+                    </li>
+                  )}
+
+                  {user?.VaiTro === 'QuanTriVien' && (
+                    <li>
+                      <Link className="dropdown-item py-2" to="/quan-ly-canh-bao">
+                        <i className="bi bi-bell-fill me-2 text-warning"></i>Cảnh báo học tập
+                      </Link>
+                    </li>
+                  )}
+
                   <li><hr className="dropdown-divider" /></li>
                   <li>
                     <button className="dropdown-item py-2 text-danger" onClick={handleLogout}>
@@ -138,22 +170,54 @@ export default function Header() {
       </nav>
 
       {/* Navbar Tầng 2 */}
-      <nav ref={headerT2Ref} 
-           className="navbar navbar-expand-lg navbar-dark bg-main-orange py-0 shadow-sm" 
-           style={{ zIndex: 5, position: 'relative' }}>
+      <nav ref={headerT2Ref}
+        className="navbar navbar-expand-lg navbar-dark bg-main-orange py-0 shadow-sm"
+        style={{ zIndex: 5, position: 'relative' }}>
         <div className="container">
           <div className="collapse navbar-collapse" id="mainMenu">
             <ul className="navbar-nav w-100 justify-content-between py-2 py-lg-0">
-              <li className="nav-item"><NavLink className="nav-link" to="/" end><i className="bi bi-house-door-fill me-1"></i>Trang chủ</NavLink></li>
-              <li className="nav-item"><NavLink className="nav-link" to="/gioi-thieu">Giới thiệu</NavLink></li>
-              <li className="nav-item"><NavLink className="nav-link" to="/giao-vien">Giáo viên</NavLink></li>
-              <li className="nav-item"><NavLink className="nav-link" to="/phong-luyen">Phòng luyện</NavLink></li>
-              <li className="nav-item"><NavLink className="nav-link" to="/thu-vien">Thư viện</NavLink></li>
-              <li className="nav-item"><NavLink className="nav-link" to="/lo-trinh">Lộ trình</NavLink></li>
-              
-              {/* Giữ lại mục Thống kê trên thanh điều hướng chính */}
               <li className="nav-item">
-                <NavLink className="nav-link" to="/thong-ke">
+                <NavLink className="nav-link" to="/" end>
+                  <i className="bi bi-house-door-fill me-1"></i>Trang chủ
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/gioi-thieu">Giới thiệu</NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/giao-vien">Giáo viên</NavLink>
+              </li>
+
+              {/* ĐÃ SỬA LỖI SÁNG ĐỒNG LOẠT: Ép điều kiện user phải tồn tại mới được nhận class active */}
+              <li className="nav-item">
+                <NavLink
+                  className={({ isActive }) => `nav-link ${isActive && user ? 'active' : ''}`}
+                  to={user ? "/phong-luyen" : "/dang-nhap"}
+                >
+                  Phòng luyện
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  className={({ isActive }) => `nav-link ${isActive && user ? 'active' : ''}`}
+                  to={user ? "/thu-vien" : "/dang-nhap"}
+                >
+                  Thư viện
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  className={({ isActive }) => `nav-link ${isActive && user ? 'active' : ''}`}
+                  to={user ? "/lo-trinh" : "/dang-nhap"}
+                >
+                  Lộ trình
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  className={({ isActive }) => `nav-link ${isActive && user ? 'active' : ''}`}
+                  to={user ? "/thong-ke" : "/dang-nhap"}
+                >
                   <i className="bi bi-bar-chart-line-fill me-1"></i>Thống kê
                 </NavLink>
               </li>
@@ -179,7 +243,7 @@ export default function Header() {
               )}
 
               <hr className="text-white d-lg-none" />
-              
+
               {user ? (
                 <>
                   <li className="nav-item d-lg-none">
@@ -192,7 +256,31 @@ export default function Header() {
                       <i className="bi bi-clipboard2-data me-2"></i>Kết quả bài thi
                     </NavLink>
                   </li>
-                  {/* ĐÃ BỎ: Mục Thống kê ở Mobile list */}
+
+                  {user.VaiTro === 'HocSinh' && (
+                    <li className="nav-item d-lg-none">
+                      <NavLink className="nav-link" to="/phan-tich-hoc-tap">
+                        <i className="bi bi-clipboard-data-fill me-2"></i>Phân tích học tập
+                      </NavLink>
+                    </li>
+                  )}
+
+                  {user?.VaiTro === 'GiaoVien' && (
+                    <li className="nav-item d-lg-none">
+                      <NavLink className="nav-link text-danger" to="/hoc-sinh-sa-sut">
+                        <i className="bi bi-life-preserver me-2"></i>Hỗ trợ học sinh
+                      </NavLink>
+                    </li>
+                  )}
+
+                  {user?.VaiTro === 'QuanTriVien' && (
+                    <li className="nav-item d-lg-none">
+                      <NavLink className="nav-link text-warning" to="/quan-ly-canh-bao">
+                        <i className="bi bi-bell-fill me-2"></i>Cảnh báo học tập
+                      </NavLink>
+                    </li>
+                  )}
+
                   <li className="nav-item d-lg-none">
                     <button className="nav-link btn border-0 text-start w-100" onClick={handleLogout}>
                       <i className="bi bi-box-arrow-right me-2"></i>Đăng xuất

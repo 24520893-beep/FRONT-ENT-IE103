@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Header from './components/Header';
-import Footer from './components/Footer'; 
+import Footer from './components/Footer';
 import AIChat from './components/AIChat';
 
 // Import các trang
@@ -35,69 +35,75 @@ import ThungRac from './pages/ThungRac/ThungRac';
 import KetQuaThi from './pages/KetQuaThi/KetQuaThi';
 import GiaoVienDaXoa from './pages/Admin/GiaoVienDaXoa';
 import ThongKeThiThu from './pages/KetQuaThi/ThongKeThiThu';
-
-import './App.css';
+import PhanTichHocTap from './pages/NguoiDung/PhanTichHocTap';
+import HocSinhSaSut from './pages/NguoiDung/HocSinhSaSut';
+import QuanLyCanhBao from './pages/Admin/QuanLyCanhBao';
 import QuanLyCauHoi from './pages/Admin/QuanLyCauHoi';
 import QuanLyLoTrinh from './pages/Admin/QuanLyLoTrinh';
 import XemBaiLam from './pages/PhongLuyen/XemBaiLam';
+import TienDoLoTrinh from './pages/NguoiDung/TienDoLoTrinh';
+
+import './App.css';
 
 function App() {
   return (
     <Router>
       <Header />
-      
+
       <Routes>
-        {/* Khai báo Route cho tất cả các trang đã import */}
+        {/* ==========================================
+            CÁC TRANG PUBLIC (Chỉ 5 trang được mở tự do)
+            ========================================== */}
         <Route path="/" element={<Home />} />
         <Route path="/gioi-thieu" element={<GioiThieu />} />
         <Route path="/giao-vien" element={<GiaoVien />} />
-        <Route path="/phong-luyen" element={<PhongLuyen />} />
-        <Route path="/them-tai-lieu" element={<ThemTaiLieu />} />
-        <Route path="/them-de-thi" element={<ThemDeThi />} />
-        <Route path="/them-lo-trinh" element={<ThemLoTrinh />} />
-        <Route path="/them-giao-vien" element={<ThemGiaoVien />} />
-        <Route path="/them-cau-hoi" element={<ThemCauHoi />} />      
-        <Route path="/lo-trinh/:id" element={<ChiTietLoTrinh />} />
-        <Route path="/ho-tro" element={<HoTro />} />
-        <Route path="/lo-trinh" element={<LoTrinh />} />
         <Route path="/dang-ky" element={<DangKy />} />
         <Route path="/dang-nhap" element={<DangNhap />} />
-        <Route path="/phong-luyen/:id" element={<LamBaiThi />} />
-        <Route path="/thung-rac" element={<ThungRac />} />
-        <Route path="/ket-qua-thi" element={<KetQuaThi />} />
-        <Route path="/ket-qua-thi/:id" element={<XemBaiLam />} />
-        <Route path="/thong-ke" element={<ThongKeThiThu />} />
 
-        <Route path="/thu-vien">
-          {/* Trang chính: /thu-vien */}
-          <Route index element={<ThuVien />} /> 
+        {/* ==========================================
+            CÁC TRANG PRIVATE (Bắt buộc đăng nhập)
+            ========================================== */}
+        <Route element={<ProtectedRoute />}>
           
-          {/* Trang chi tiết: /thu-vien/tai-lieu/:id */}
-          <Route path="tai-lieu/:id" element={<ChiTietTaiLieu />} />
+          {/* CÁC TRANG CHÍNH NAY ĐÃ CHUYỂN THÀNH PRIVATE */}
+          <Route path="/phong-luyen" element={<PhongLuyen />} />
+          <Route path="/phong-luyen/:id" element={<LamBaiThi />} />
+          <Route path="/thu-vien" element={<ThuVien />} />
+          <Route path="/thu-vien/tai-lieu/:id" element={<ChiTietTaiLieu />} />
+          <Route path="/thu-vien/cau-hoi/:id" element={<ChiTietCauHoi />} />
+          <Route path="/lo-trinh" element={<LoTrinh />} />
+          <Route path="/lo-trinh/:id" element={<ChiTietLoTrinh />} />
+          <Route path="/ho-tro" element={<HoTro />} />
+
+          {/* CÁC TRANG CÁ NHÂN / BÁO CÁO */}
+          <Route path="/thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
+          <Route path="/ket-qua-thi" element={<KetQuaThi />} />
+          <Route path="/ket-qua-thi/:id" element={<XemBaiLam />} />
+          <Route path="/thong-ke" element={<ThongKeThiThu />} />
+          <Route path="/phan-tich-hoc-tap" element={<PhanTichHocTap />} />
+          <Route path="/hoc-sinh-sa-sut" element={<HocSinhSaSut />} />
+          <Route path="/quan-ly-canh-bao" element={<QuanLyCanhBao />} />
+          <Route path="/tiendo-lotrinh" element={<TienDoLoTrinh />} />
+
+          {/* CÁC TRANG THÊM MỚI DỮ LIỆU */}
+          <Route path="/them-tai-lieu" element={<ThemTaiLieu />} />
+          <Route path="/them-de-thi" element={<ThemDeThi />} />
+          <Route path="/them-lo-trinh" element={<ThemLoTrinh />} />
+          <Route path="/them-giao-vien" element={<ThemGiaoVien />} />
+          <Route path="/them-cau-hoi" element={<ThemCauHoi />} />
+          <Route path="/thung-rac" element={<ThungRac />} />
+
+          {/* CÁC TRANG ADMIN */}
+          <Route path="/admin-dashboard" element={<AdminLayout />}>
+            <Route index element={<DashboardOverview />} />
+            <Route path="tailieu" element={<QuanLyTaiLieu />} />
+            <Route path="dethi" element={<QuanLyDeThi />} />
+            <Route path="cauhoi" element={<QuanLyCauHoi />} />
+            <Route path="lotrinh" element={<QuanLyLoTrinh />} />
+            <Route path="giaovien-daxoa" element={<GiaoVienDaXoa />} />
+          </Route>
           
-          <Route path="cau-hoi/:id" element={<ChiTietCauHoi />} /> 
         </Route>
-
-
-        <Route path="/admin-dashboard" element={<AdminLayout />}>
-          <Route index element={<DashboardOverview />} />
-          <Route path="tailieu" element={<QuanLyTaiLieu />} />
-          <Route path="dethi" element={<QuanLyDeThi />} />
-          <Route path="cauhoi" element={<QuanLyCauHoi />} />
-          <Route path="lotrinh" element={<QuanLyLoTrinh />} />
-          <Route path="giaovien-daxoa" element={<GiaoVienDaXoa />} />
-
-        </Route>
-
-        {/* ROUTE BỊ RÀNG BUỘC: Chỉ vào được khi đã đăng nhập */}
-        <Route 
-          path="/thong-tin-ca-nhan" 
-          element={
-            <ProtectedRoute>
-              <ThongTinCaNhan />
-            </ProtectedRoute>
-          } 
-        />
       </Routes>
 
       <Footer />

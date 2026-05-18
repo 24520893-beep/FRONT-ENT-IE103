@@ -1,9 +1,52 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import styles from './Home.module.css'; // Import CSS Module
+import styles from './Home.module.css';
+
+// 1. IMPORT WIDGET NHIỆM VỤ HÔM NAY
+import NhiemVuHomNay from '../../components/NhiemVuHomNay';
 
 export default function Home() {
   const carouselRef = useRef(null);
+  const [userRole, setUserRole] = useState(null);
+  
+  // STATE LƯU TRỮ LỘ TRÌNH
+  const [featuredRoadmaps, setFeaturedRoadmaps] = useState([]);
+  const [isLoadingRoadmaps, setIsLoadingRoadmaps] = useState(true);
+
+  // Lấy vai trò người dùng khi trang web được nạp
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        setUserRole(JSON.parse(savedUser).VaiTro);
+      } catch (e) {
+        console.error("Lỗi đọc dữ liệu người dùng từ LocalStorage:", e);
+      }
+    }
+  }, []);
+
+  // LẤY DANH SÁCH LỘ TRÌNH TỪ API PUBLIC RIÊNG BIỆT
+  useEffect(() => {
+    const fetchRoadmaps = async () => {
+      try {
+        // Dùng fetch thuần gọi API Public vừa tạo (không cần token, tự tin lấy 8 lộ trình)
+        const response = await fetch('/api/lotrinhhoctap/public/featured?limit=8');
+        
+        if (response.ok) {
+          const resData = await response.json();
+          const dataArray = Array.isArray(resData) ? resData : (resData.data || []);
+          
+          setFeaturedRoadmaps(dataArray);
+        }
+      } catch (error) {
+        console.error("Lỗi lấy danh sách lộ trình tiêu biểu:", error);
+      } finally {
+        setIsLoadingRoadmaps(false);
+      }
+    };
+
+    fetchRoadmaps();
+  }, []);
 
   // Logic hỗ trợ kéo thả cho Carousel
   useEffect(() => {
@@ -50,16 +93,21 @@ export default function Home() {
     };
   }, []);
 
+  const fallbackImages = [
+    "https://images.unsplash.com/photo-1434039311801-499948e9557a?q=80&w=400",
+    "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=400",
+    "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=400",
+    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=400",
+  ];
+
   return (
     <main>
+      {/* TẦNG 1: DANH MỤC MÔN HỌC & BANNER PROMO */}
       <div className="container mt-4">
         <div className="row g-3">
 
-          {/* 1. Danh sách dọc các môn học (Cột trái) */}
           <div className="col-lg-3 col-md-4">
             <div className={`card border-0 shadow-sm overflow-hidden h-100 ${styles.listSubject}`}>
-
-              {/* Thêm class styles.categoryHeader để điều khiển việc click */}
               <div
                 className={`bg-main-orange text-white px-3 py-2 fw-bold d-flex justify-content-between align-items-center ${styles.categoryHeader}`}
                 data-bs-toggle="collapse"
@@ -68,26 +116,37 @@ export default function Home() {
                 aria-controls="collapseSubjects"
               >
                 <div><i className="bi bi-book-half me-2"></i>Danh mục môn học</div>
-                {/* Icon chỉ hiện trên mobile (d-md-none) */}
                 <i className="bi bi-chevron-down d-md-none"></i>
               </div>
 
-              {/* d-md-block đảm bảo danh sách luôn hiện từ màn hình md trở lên */}
               <div className="collapse d-md-block" id="collapseSubjects">
-                <ul className="list-group list-group-flush">
-                  <li className="list-group-item"><Link to="#"><i className="bi bi-calculator me-2"></i>Toán Học</Link></li>
-                  <li className="list-group-item"><Link to="#"><i className="bi bi-spellcheck me-2"></i>Ngữ Văn</Link></li>
-                  <li className="list-group-item"><Link to="#"><i className="bi bi-translate me-2"></i>Tiếng Anh</Link></li>
-                  <li className="list-group-item"><Link to="#"><i className="bi bi-thermometer-half me-2"></i>Vật Lý</Link></li>
-                  <li className="list-group-item"><Link to="#"><i className="bi bi-droplet-half me-2"></i>Hóa Học</Link></li>
-                  <li className="list-group-item"><Link to="#"><i className="bi bi-bug me-2"></i>Sinh Học</Link></li>
-                  <li className="list-group-item"><Link to="#"><i className="bi bi-globe-americas me-2"></i>Lịch Sử - Địa Lý</Link></li>
+                <ul className="list-unstyled mb-0 bg-white">
+                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
+                    <i className="bi bi-calculator me-3 text-muted"></i>Toán Học
+                  </li>
+                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
+                    <i className="bi bi-spellcheck me-3 text-muted"></i>Ngữ Văn
+                  </li>
+                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
+                    <i className="bi bi-translate me-3 text-muted"></i>Tiếng Anh
+                  </li>
+                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
+                    <i className="bi bi-thermometer-half me-3 text-muted"></i>Vật Lý
+                  </li>
+                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
+                    <i className="bi bi-droplet-half me-3 text-muted"></i>Hóa Học
+                  </li>
+                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
+                    <i className="bi bi-bug me-3 text-muted"></i>Sinh Học
+                  </li>
+                  <li className="text-dark py-2 px-3" style={{ cursor: 'default' }}>
+                    <i className="bi bi-globe-americas me-3 text-muted"></i>Lịch Sử - Địa Lý
+                  </li>
                 </ul>
               </div>
             </div>
           </div>
 
-          {/* 2. Box hình khuyến mãi tự trượt & Kéo thả (Cột giữa) */}
           <div className="col-lg-6 col-md-8">
             <div ref={carouselRef} id="promoCarousel" className={`carousel slide shadow-sm rounded-3 overflow-hidden h-100 ${styles.promoCarousel}`} data-bs-ride="carousel">
               <div className="carousel-indicators">
@@ -111,7 +170,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="carousel-item h-100" data-bs-interval="3000">
-                  <img src="https://images.unsplash.com/photo-1434039311801-499948e9557a?q=80&w=800" className={`d-block w-100 ${styles.promoImg}`} alt="Khuyến mãi 3" />
+                  <img src="https://media.zim.vn/66b49bba6ad513d2a80bd4ff/dalle-2024-08-08-171920-a-classroom-scene-depicting-personalized-learning-without-technology-a-diverse-group-of-students-in-a-classroom-each-engaged-in-their-own-learning-a_xlarge.webp" className={`d-block w-100 ${styles.promoImg}`} alt="Lộ Trình Cá Nhân Hóa" />
                   <div className="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded">
                     <h5>Lộ Trình Cá Nhân Hóa</h5>
                     <p>Đột phá điểm số cùng chuyên gia.</p>
@@ -127,7 +186,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 3. Box tải ứng dụng (Cột phải) */}
           <div className="col-lg-3 d-none d-lg-block">
             <div className="card border-0 shadow-sm p-4 text-center h-100 d-flex flex-column justify-content-center bg-light">
               <h5 className="fw-bold mb-3 text-dark">HOCMOI App</h5>
@@ -159,103 +217,67 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="container mt-5">
+      {/* CHÈN WIDGET NHIỆM VỤ HÔM NAY (CHỈ HỌC SINH ĐĂNG NHẬP MỚI NHÌN THẤY) */}
+      {userRole === 'HocSinh' && <NhiemVuHomNay />}
+
+      {/* TẦNG 2: DANH SÁCH LỘ TRÌNH TỪ DATABASE */}
+      <div className="container mt-5 mb-5">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2 className={`mb-0 ${styles.sectionTitle}`}>Lộ Trình Học Tập Tiêu Biểu</h2>
-          <Link to="#" className="text-main-orange text-decoration-none fw-bold">Xem tất cả <i className="bi bi-arrow-right"></i></Link>
+          <Link to="/lo-trinh" className="text-main-orange text-decoration-none fw-bold">Xem tất cả <i className="bi bi-arrow-right"></i></Link>
         </div>
 
         <div className="row g-4">
-
-          {/* Lộ trình 1 */}
-          <div className="col-12 col-md-6 col-lg-3 d-flex">
-            <div className={`card border-0 shadow-sm ${styles.hoverCardRoadmap}`}>
-              <div className="position-relative">
-                <img src="https://images.unsplash.com/photo-1434039311801-499948e9557a?q=80&w=400" className={`card-img-top ${styles.roadmapImg}`} alt="TOEIC Roadmap" />
-                <span className="badge bg-main-orange position-absolute top-0 start-0 m-2">HOT</span>
-              </div>
-              <div className="card-body">
-                <h5 className="card-title fw-bold fs-6">Luyện thi TOEIC Cấp tốc 750+</h5>
-                <div className="mt-auto">
-                  <p className={`mb-2 small ${styles.teacherName}`}>
-                    <i className="bi bi-person-badge me-1"></i>GV. Lê Lan Anh
-                  </p>
-                  <div className="d-flex justify-content-between text-muted small mb-3">
-                    <span><i className="bi bi-file-earmark-text me-1"></i>45 Tài liệu</span>
-                    <span><i className="bi bi-clipboard-check me-1"></i>12 Đề thi</span>
-                  </div>
-                  <button className="btn btn-outline-main-orange w-100 fw-bold btn-sm">Chi tiết lộ trình</button>
-                </div>
-              </div>
+          {isLoadingRoadmaps ? (
+            <div className="col-12 text-center py-5">
+              <div className="spinner-border text-main-orange" role="status"></div>
+              <p className="mt-2 text-muted">Đang tải danh sách lộ trình...</p>
             </div>
-          </div>
+          ) : featuredRoadmaps.length > 0 ? (
+            featuredRoadmaps.map((roadmap, index) => {
+              const imageUrl = roadmap.HinhAnhMinhHoa || roadmap.HinhAnh || fallbackImages[index % fallbackImages.length];
+              const teacherName = roadmap.MaGVPhuTrach?.HoTen || "Giáo viên HOCMOI";
+              const taskCount = roadmap.DanhSachNhiemVu ? roadmap.DanhSachNhiemVu.length : 0;
 
-          {/* Lộ trình 2 */}
-          <div className="col-12 col-md-6 col-lg-3 d-flex">
-            <div className={`card border-0 shadow-sm ${styles.hoverCardRoadmap}`}>
-              <div className="position-relative">
-                <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=400" className={`card-img-top ${styles.roadmapImg}`} alt="Math Roadmap" />
-              </div>
-              <div className="card-body">
-                <h5 className="card-title fw-bold fs-6">Toán Cao Cấp - Bứt phá điểm A</h5>
-                <div className="mt-auto">
-                  <p className={`mb-2 small ${styles.teacherName}`}>
-                    <i className="bi bi-person-badge me-1"></i>ThS. Nguyễn Quốc Bảo
-                  </p>
-                  <div className="d-flex justify-content-between text-muted small mb-3">
-                    <span><i className="bi bi-file-earmark-text me-1"></i>30 Tài liệu</span>
-                    <span><i className="bi bi-clipboard-check me-1"></i>08 Đề thi</span>
+              return (
+                <div key={roadmap._id || index} className="col-12 col-md-6 col-lg-3 d-flex">
+                  <div className={`card border-0 shadow-sm w-100 ${styles.hoverCardRoadmap}`}>
+                    <div className="position-relative">
+                      <img 
+                        src={imageUrl} 
+                        className={`card-img-top ${styles.roadmapImg}`} 
+                        alt={roadmap.TenLoTrinh} 
+                        style={{ height: '160px', objectFit: 'cover' }} 
+                      />
+                      {index < 2 && <span className="badge bg-main-orange position-absolute top-0 start-0 m-2">HOT</span>}
+                    </div>
+                    <div className="card-body d-flex flex-column">
+                      <h5 className="card-title fw-bold fs-6 mb-3 line-clamp-2" title={roadmap.TenLoTrinh}>
+                        {roadmap.TenLoTrinh}
+                      </h5>
+                      <div className="mt-auto">
+                        <p className={`mb-2 small text-truncate ${styles.teacherName}`}>
+                          <i className="bi bi-person-badge me-1"></i> {teacherName}
+                        </p>
+                        <div className="d-flex justify-content-between text-muted small mb-3">
+                          <span><i className="bi bi-journal-bookmark-fill me-1"></i>{taskCount} Bài học</span>
+                          <span><i className="bi bi-tag-fill me-1"></i>{roadmap.MonHoc || 'Chung'}</span>
+                        </div>
+                        <Link to={`/lo-trinh/${roadmap._id}`} className="btn btn-outline-main-orange w-100 fw-bold btn-sm">
+                          Chi tiết lộ trình
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                  <button className="btn btn-outline-main-orange w-100 fw-bold btn-sm">Chi tiết lộ trình</button>
                 </div>
-              </div>
+              );
+            })
+          ) : (
+            <div className="col-12 text-center py-5 bg-white rounded shadow-sm border">
+              <i className="bi bi-map text-muted opacity-25 d-block mb-3" style={{ fontSize: '3rem' }}></i>
+              <h5 className="text-muted">Chưa có lộ trình nào được công bố.</h5>
             </div>
-          </div>
-
-          {/* Lộ trình 3 */}
-          <div className="col-12 col-md-6 col-lg-3 d-flex">
-            <div className={`card border-0 shadow-sm ${styles.hoverCardRoadmap}`}>
-              <div className="position-relative">
-                <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=400" className={`card-img-top ${styles.roadmapImg}`} alt="Web Dev Roadmap" />
-              </div>
-              <div className="card-body">
-                <h5 className="card-title fw-bold fs-6">Full-stack Web Dev với React & Node</h5>
-                <div className="mt-auto">
-                  <p className={`mb-2 small ${styles.teacherName}`}>
-                    <i className="bi bi-person-badge me-1"></i>GV. Trần Minh Triết
-                  </p>
-                  <div className="d-flex justify-content-between text-muted small mb-3">
-                    <span><i className="bi bi-file-earmark-text me-1"></i>120 Tài liệu</span>
-                    <span><i className="bi bi-clipboard-check me-1"></i>25 Đề thi</span>
-                  </div>
-                  <button className="btn btn-outline-main-orange w-100 fw-bold btn-sm">Chi tiết lộ trình</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Lộ trình 4 */}
-          <div className="col-12 col-md-6 col-lg-3 d-flex">
-            <div className={`card border-0 shadow-sm ${styles.hoverCardRoadmap}`}>
-              <div className="position-relative">
-                <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=400" className={`card-img-top ${styles.roadmapImg}`} alt="Security Roadmap" />
-              </div>
-              <div className="card-body">
-                <h5 className="card-title fw-bold fs-6">Cybersecurity: Từ Zero đến Hero</h5>
-                <div className="mt-auto">
-                  <p className={`mb-2 small ${styles.teacherName}`}>
-                    <i className="bi bi-person-badge me-1"></i>Kỹ sư. Hoàng Nam
-                  </p>
-                  <div className="d-flex justify-content-between text-muted small mb-3">
-                    <span><i className="bi bi-file-earmark-text me-1"></i>65 Tài liệu</span>
-                    <span><i className="bi bi-clipboard-check me-1"></i>15 Đề thi</span>
-                  </div>
-                  <button className="btn btn-outline-main-orange w-100 fw-bold btn-sm">Chi tiết lộ trình</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
+          )}
         </div>
       </div>
     </main>
