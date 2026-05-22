@@ -51,56 +51,81 @@ const ChiTietLoTrinh = () => {
             ? `/phong-luyen/${refId}`
             : `/thu-vien/tai-lieu/${refId}`;
 
-        // CHỈ XỬ LÝ TIẾN ĐỘ CHO HỌC SINH
+        // Thay thế đoạn code trong handleTaskAction của ChiTietLoTrinh.js
         if (userRole === 'HocSinh') {
             if (isExam) {
-                // ĐỀ THI: Kiểm tra xem học sinh đã có kết quả thi chưa
                 try {
                     const res = await fetchClient(`/api/ketquathithu/check-exam/${refId}`);
                     const data = await res.json();
 
+                    // TRƯỜNG HỢP 1: CHƯA THI LẦN NÀO
                     if (!data.existed) {
-                        // Chưa thi -> chặn lại, hiện modal thông báo
                         setBlockingModal({
                             isOpen: true,
-                            message: `Bạn cần hoàn thành bài thi này trước khi tiếp tục lộ trình. Nhấn "Đi đến đề thi" để làm bài.`,
+                            message: `Bạn cần hoàn thành bài thi này và đạt từ 5.0 điểm trở lên để mở khóa nhiệm vụ tiếp theo. Nhấn "Đi đến đề thi" để làm bài.`,
                             examId: refId
                         });
                         return;
                     }
 
-                    // Đã thi -> tính hoàn thành nếu đang là nhiệm vụ hiện tại
-                    if (isActive) {
-                        await updateProgress(index);
+                    // TRƯỜNG HỢP 2: ĐÃ THI NHƯNG DƯỚI 5 ĐIỂM
+                    if (data.ketQua && data.ketQua.DiemSo < 5) {
+                        setBlockingModal({
+                            isOpen: true,
+                            message: `Điểm cao nhất của bạn hiện tại là ${data.ketQua.DiemSo}/10. Yêu cầu đạt từ 5.0 điểm trở lên để qua bài. Vui lòng ôn tập và thi lại!`,
+                            examId: refId
+                        });
+                        return;
                     }
+
+                    // TRƯỜNG HỢP 3: ĐIỂM >= 5
+                    // Backend đã tự động cập nhật tiến độ khi nộp bài. 
+                    // KHÔNG gọi hàm updateProgress(index) ở đây nữa để tránh gian lận.
+
                 } catch (error) {
                     console.error("Lỗi kiểm tra kết quả thi:", error);
-                    // Nếu lỗi mạng, vẫn cho vào xem đề thi nhưng không tính tiến độ
                 }
             } else {
-                // TÀI LIỆU: Nhấn vào là tính hoàn thành ngay nếu đang là nhiệm vụ hiện tại
+                // TÀI LIỆU HỌC TẬP (Xem lý thuyết): Giữ nguyên, học sinh cứ bấm vào xem là tăng tiến độ
                 if (isActive) {
                     await updateProgress(index);
                 }
             }
         }
 
-        navigate(targetUrl);
+        navigate(targetUrl); // luôn navigate sau cùng
     };
 
     const updateProgress = async (index) => {
         const totalTasks = roadmap.DanhSachNhiemVu.length;
         const newDoneCount = index + 1;
-        const newPercentage = Math.round((newDoneCount / totalTasks) * 100);
+        // Dùng Math.floor thay Math.round để tránh vượt quá 100%
+        // Hoặc tốt hơn: chỉ set 100% khi done hết
+        const newPercentage = newDoneCount >= totalTasks
+            ? 100
+            : Math.floor((newDoneCount / totalTasks) * 100);
 
         try {
-            await fetchClient(`/api/lotrinhhoctap/${roadmap._id}`, {
+            const res = await fetchClient(`/api/lotrinhhoctap/${roadmap._id}`, {
                 method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     MucDoHoanThanh: newPercentage,
-                    NhiemVuHoanThanh: newDoneCount
+                    NhiemVuHoanThanh: newDoneCount  // ← trường này là quan trọng nhất
                 })
             });
+
+            if (!res.ok) {
+                console.error('PUT thất bại, status:', res.status);
+                return;
+            }
+
+            setRoadmap(prev => ({
+                ...prev,
+                MucDoHoanThanh: newPercentage,
+                NhiemVuHoanThanh: newDoneCount
+            }));
+
         } catch (error) {
             console.error("Lỗi khi cập nhật tiến độ:", error);
         }
@@ -111,7 +136,8 @@ const ChiTietLoTrinh = () => {
 
     const totalTasks = roadmap.DanhSachNhiemVu?.length || 0;
     const currentPercent = roadmap.MucDoHoanThanh || 0;
-    const doneCount = Math.round((currentPercent * totalTasks) / 100);
+    const lastProgress = roadmap?.LichSuTienDo?.at(-1);
+    const doneCount = lastProgress?.NhiemVuHoanThanh ?? roadmap?.NhiemVuHoanThanh ?? 0;
 
     return (
         <div className="container py-4">
@@ -162,12 +188,11 @@ const ChiTietLoTrinh = () => {
                                                 <button
                                                     onClick={(e) => handleTaskAction(e, item, index, isActive, isLocked)}
                                                     disabled={isLocked}
-                                                    className={`btn btn-sm rounded-pill px-3 ${
-                                                        userRole !== 'HocSinh' ? 'btn-outline-secondary fw-bold' :
+                                                    className={`btn btn-sm rounded-pill px-3 ${userRole !== 'HocSinh' ? 'btn-outline-secondary fw-bold' :
                                                         isLocked ? 'btn-secondary disabled' :
-                                                        isCompleted ? 'btn-outline-success' :
-                                                        'btn-outline-primary fw-bold'
-                                                    }`}
+                                                            isCompleted ? 'btn-outline-success' :
+                                                                'btn-outline-primary fw-bold'
+                                                        }`}
                                                 >
                                                     {userRole !== 'HocSinh' ? (
                                                         <>Xem chi tiết <i className="bi bi-eye ms-1"></i></>
