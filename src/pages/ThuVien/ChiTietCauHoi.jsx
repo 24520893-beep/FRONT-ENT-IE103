@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import styles from './ChiTietCauHoi.module.css';
-import { fetchClient } from '../../utils/fetchClient'; 
+import { fetchClient } from '../../utils/fetchClient';
 
 const ChiTietCauHoi = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    
+
     // STATE DỮ LIỆU
     const [question, setQuestion] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -14,10 +14,10 @@ const ChiTietCauHoi = () => {
     const [currentUserId, setCurrentUserId] = useState(null);
 
     // STATE TƯƠNG TÁC NGƯỜI DÙNG
-    const [userAnswer, setUserAnswer] = useState(''); 
-    const [userAnswersDS, setUserAnswersDS] = useState(['', '', '', '']); 
-    const [isSubmitted, setIsSubmitted] = useState(false); 
-    const [isCorrect, setIsCorrect] = useState(null); 
+    const [userAnswer, setUserAnswer] = useState('');
+    const [userAnswersDS, setUserAnswersDS] = useState(['', '', '', '']);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isCorrect, setIsCorrect] = useState(null);
 
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
@@ -31,7 +31,7 @@ const ChiTietCauHoi = () => {
             try {
                 const res = await fetchClient(`/api/cauhoi/${id}`);
                 const data = await res.json();
-                
+
                 if (res.ok) {
                     setQuestion(data);
                 } else {
@@ -48,8 +48,8 @@ const ChiTietCauHoi = () => {
     }, [id, navigate]);
 
     // XỬ LÝ DỮ LIỆU CHUẨN SCHEMA
-    let parsedDSAnswers = ['Đ', 'Đ', 'Đ', 'Đ']; 
-    
+    let parsedDSAnswers = ['Đ', 'Đ', 'Đ', 'Đ'];
+
     if (question && question.LoaiCauHoi === 'DungSai') {
         if (Array.isArray(question.DanhSachLuaChon) && question.DanhSachLuaChon.length > 0) {
             parsedDSAnswers = question.DanhSachLuaChon.map(val => {
@@ -82,7 +82,7 @@ const ChiTietCauHoi = () => {
 
         if (question.LoaiCauHoi === 'TracNghiem') {
             setIsCorrect(userAnswer === question.DapAnChinhXac);
-        } 
+        }
         else if (question.LoaiCauHoi === 'DienKhuyet') {
             const normalizedUser = userAnswer.toString().trim().toLowerCase();
             const normalizedCorrect = (question.DapAnChinhXac || '').toString().trim().toLowerCase();
@@ -117,7 +117,7 @@ const ChiTietCauHoi = () => {
                 `**Đề bài chính (Gồm các phát biểu):**\n${question.NoiDungCauHoi}\n\n` +
                 `**Các ý tôi làm sai và cần giải thích:**\n${saiCacY.join('\n')}\n\n` +
                 `Hãy phân tích ngắn gọn, dễ hiểu từng ý một dựa trên đề bài.`;
-                
+
         } else if (question.LoaiCauHoi === 'TuLuan') {
             cauHoiChoAI = `Giải thích chi tiết và hướng dẫn tôi cách tư duy để giải quyết câu hỏi tự luận sau:\n\n` +
                 `**Môn học:** ${question.MonHoc}\n` +
@@ -140,8 +140,8 @@ const ChiTietCauHoi = () => {
                 `Hãy giải thích chi tiết tại sao lại có kết quả như vậy một cách dễ hiểu nhất.`;
         }
 
-        const event = new CustomEvent('openAIChat', { 
-            detail: { message: cauHoiChoAI } 
+        const event = new CustomEvent('openAIChat', {
+            detail: { message: cauHoiChoAI }
         });
         window.dispatchEvent(event);
     };
@@ -178,9 +178,9 @@ const ChiTietCauHoi = () => {
                         <div className="card shadow-sm border-0 p-4 mb-4">
                             <div className="d-flex justify-content-between align-items-start mb-3">
                                 <span className="badge bg-main-orange-light text-main-orange px-3 py-2">
-                                    {question.LoaiCauHoi === 'TracNghiem' ? 'Trắc nghiệm' : 
-                                     question.LoaiCauHoi === 'DungSai' ? 'Đúng / Sai' :
-                                     question.LoaiCauHoi === 'DienKhuyet' ? 'Điền khuyết' : 'Tự luận'}
+                                    {question.LoaiCauHoi === 'TracNghiem' ? 'Trắc nghiệm' :
+                                        question.LoaiCauHoi === 'DungSai' ? 'Đúng / Sai' :
+                                            question.LoaiCauHoi === 'DienKhuyet' ? 'Điền khuyết' : 'Tự luận'}
                                 </span>
                                 <span className={`badge ${getStatusBadge(question.TrangThai)}`}>
                                     {question.TrangThai}
@@ -195,11 +195,11 @@ const ChiTietCauHoi = () => {
                             {/* HIỂN THỊ ẢNH MINH HỌA NẾU CÓ */}
                             {question.HinhAnhMinhHoa && (
                                 <div className="mb-4 text-center">
-                                    <img 
-                                        src={question.HinhAnhMinhHoa} 
-                                        alt="Minh họa câu hỏi" 
-                                        className="img-fluid rounded shadow-sm border" 
-                                        style={{ maxHeight: '400px', objectFit: 'contain' }} 
+                                    <img
+                                        src={question.HinhAnhMinhHoa}
+                                        alt="Minh họa câu hỏi"
+                                        className="img-fluid rounded shadow-sm border"
+                                        style={{ maxHeight: '400px', objectFit: 'contain' }}
                                     />
                                 </div>
                             )}
@@ -209,12 +209,12 @@ const ChiTietCauHoi = () => {
                                     <i className={question.LoaiCauHoi === 'TuLuan' ? "bi bi-journal-text me-2" : "bi bi-pencil-square me-2"}></i>
                                     {question.LoaiCauHoi === 'TuLuan' ? "Hướng dẫn học tập:" : "Khu vực làm bài:"}
                                 </h6>
-                                
+
                                 {question.LoaiCauHoi === 'TracNghiem' && (
                                     <div className="d-flex flex-column gap-3">
                                         {['A', 'B', 'C', 'D'].map((label, idx) => (
                                             <label key={label} className={`${styles.optionLabel} ${userAnswer === label ? styles.optionSelected : ''} ${isSubmitted && question.DapAnChinhXac === label ? styles.optionCorrect : ''} ${isSubmitted && userAnswer === label && !isCorrect ? styles.optionWrong : ''}`}>
-                                                <input 
+                                                <input
                                                     type="radio" name="mcq" className="d-none" value={label}
                                                     disabled={isSubmitted}
                                                     onChange={(e) => setUserAnswer(e.target.value)}
@@ -242,7 +242,7 @@ const ChiTietCauHoi = () => {
                                                         <label className={`btn ${userAnswersDS[idx] === 'S' ? 'btn-danger' : 'btn-outline-danger'} px-4`} htmlFor={`ds_${idx}_S`}>Sai</label>
                                                     </div>
                                                     {isSubmitted && (
-                                                        <div className="flex-shrink-0 text-center ms-md-2" style={{width: '30px'}}>
+                                                        <div className="flex-shrink-0 text-center ms-md-2" style={{ width: '30px' }}>
                                                             {isThisCorrect ? <i className="bi bi-check-circle-fill text-success fs-4"></i> : <i className="bi bi-x-circle-fill text-danger fs-4"></i>}
                                                         </div>
                                                     )}
@@ -255,8 +255,8 @@ const ChiTietCauHoi = () => {
                                 {question.LoaiCauHoi === 'DienKhuyet' && (
                                     <div>
                                         <label className="fw-bold mb-2">Nhập đáp án của bạn:</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             className={`form-control form-control-lg shadow-none ${isSubmitted ? (isCorrect ? 'is-valid' : 'is-invalid') : ''}`}
                                             placeholder="Gõ kết quả vào đây..."
                                             value={userAnswer}
@@ -342,7 +342,12 @@ const ChiTietCauHoi = () => {
                     <div className="col-12 col-lg-4">
                         <div className="card shadow-sm border-0 p-4 mb-4">
                             <h5 className="fw-bold mb-4">Thông tin bổ sung</h5>
-                            <div className="mb-3"><label className="text-muted small d-block">Môn học</label><span className="fw-bold text-dark">{question.MonHoc}</span></div>
+                            <div className="mb-3">
+                                <label className="text-muted small d-block">Môn học</label>
+                                <span className="fw-bold text-main-orange fs-5">
+                                    {documentData.MonHoc || "Đánh giá năng lực (Tổng hợp)"}
+                                </span>
+                            </div>
                             <div className="mb-3"><label className="text-muted small d-block">Chuyên đề</label><span className="fw-medium text-dark">{question.ChuyenDe || 'Đang cập nhật'}</span></div>
                             <div className="mb-3"><label className="text-muted small d-block">Mức độ</label><span className={`badge ${question.DoKho === 'Nhận biết' ? 'bg-info' : question.DoKho === 'Thông hiểu' ? 'bg-primary' : question.DoKho === 'Vận dụng' ? 'bg-warning text-dark' : 'bg-danger'}`}>{question.DoKho}</span></div>
                             <hr className="my-4 opacity-10" />
@@ -352,7 +357,7 @@ const ChiTietCauHoi = () => {
                                     <div className={styles.avatar}>{question.MaGVBienSoan?.HoTen?.charAt(0) || 'G'}</div>
                                     <div className="ms-2">
                                         <div className="fw-bold small">{question.MaGVBienSoan?.HoTen || "Giáo viên ẩn danh"}</div>
-                                        <div className="text-muted" style={{fontSize: '11px'}}>Cập nhật: {new Date(question.NgayCapNhat).toLocaleDateString('vi-VN')}</div>
+                                        <div className="text-muted" style={{ fontSize: '11px' }}>Cập nhật: {new Date(question.NgayCapNhat).toLocaleDateString('vi-VN')}</div>
                                     </div>
                                 </div>
                             </div>

@@ -33,6 +33,7 @@ const LoTrinh = () => {
         page: currentPage,
         limit: itemsPerPage,
         search: searchTerm,
+        scope: 'catalog',
       });
 
       if (filterStatus !== 'Tất cả') {

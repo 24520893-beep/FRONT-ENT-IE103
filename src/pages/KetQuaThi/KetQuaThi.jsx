@@ -75,7 +75,11 @@ const KetQuaThi = () => {
                                     <tr key={item._id}>
                                         <td className="ps-4">
                                             <div className="fw-bold text-dark">{item.MaDeThi?.TenDeThi || "Đề thi đã bị xóa"}</div>
-                                            <span className="badge bg-light text-muted border fw-normal">{item.MaDeThi?.MonHoc || "N/A"}</span>
+                                            
+                                            {/* ĐÃ CHỈNH SỬA TẠI ĐÂY: Hiển thị Đánh giá năng lực nếu không có MonHoc */}
+                                            <span className={`badge border fw-normal mt-1 ${item.MaDeThi?.MonHoc ? 'bg-light text-muted' : 'bg-primary-subtle text-primary border-primary-subtle'}`}>
+                                                {item.MaDeThi?.MonHoc ? item.MaDeThi.MonHoc : 'Đánh giá năng lực'}
+                                            </span>
                                         </td>
                                         {userRole !== 'HocSinh' && (
                                             <td>

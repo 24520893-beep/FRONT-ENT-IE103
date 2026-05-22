@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select'; 
-import CreatableSelect from 'react-select/creatable'; // Dùng cho nhãn dán
+import CreatableSelect from 'react-select/creatable'; 
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import styles from './ThemDeThi.module.css';
 import { fetchClient } from '../../utils/fetchClient'; 
+
+const SUBJECTS = [
+    "Ngữ văn", "Toán học", "Vật lí", "Hóa học", "Sinh học", 
+    "Lịch sử", "Địa lí", "Giáo dục kinh tế và pháp luật", 
+    "Tin học", "Công nghệ Công nghiệp", "Công nghệ Nông nghiệp",
+    "Tiếng Anh", "Tiếng Nga", "Tiếng Pháp", "Tiếng Trung Quốc", 
+    "Tiếng Đức", "Tiếng Nhật", "Tiếng Hàn"
+];
 
 const ThemDeThi = () => {
     const navigate = useNavigate();
@@ -17,12 +25,13 @@ const ThemDeThi = () => {
     const [timeLimit, setTimeLimit] = useState('');
     const [user, setUser] = useState(null);
 
-    // STATE QUẢN LÝ CÂU HỎI
+    const [examType, setExamType] = useState('THPT'); 
+    const [subject, setSubject] = useState(''); 
+
     const [bulkQuestions, setBulkQuestions] = useState('');
     const [addedQuestions, setAddedQuestions] = useState([]);
     const [selectedIds, setSelectedIds] = useState([]); 
 
-    // STATE QUẢN LÝ NHÃN DÁN (Chuẩn Schema)
     const [tagOptions, setTagOptions] = useState([]); 
     const [selectedTags, setSelectedTags] = useState([]); 
     const [isLoadingTags, setIsLoadingTags] = useState(false);
@@ -38,16 +47,24 @@ const ThemDeThi = () => {
         isOpen: false,
         message: '',
         type: 'primary', 
-        actionType: null, // 'SAVE', 'DELETE_SINGLE', 'DELETE_SELECTED'
+        actionType: null, 
         targetId: null    
     });
 
+    // Kiểm tra xem môn học có bị khóa cứng không (giáo viên có MonHoc và đang tạo/sửa đề THPT)
+    const isSubjectLocked = examType === 'THPT' && user?.MonHoc;
+
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
-        if (savedUser) setUser(JSON.parse(savedUser));
-    }, []);
+        if (savedUser) {
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+            if (!isEditMode && parsedUser.MonHoc) {
+                setSubject(parsedUser.MonHoc);
+            }
+        }
+    }, [isEditMode]);
 
-    // 1. FETCH DỮ LIỆU CŨ VÀ NHÃN DÁN
     useEffect(() => {
         const fetchTags = async () => {
             try {
@@ -69,6 +86,17 @@ const ThemDeThi = () => {
                     setExamName(data.TenDeThi || '');
                     setTimeLimit(data.ThoiGianGioiHan || '');
                     
+                    if (data.MonHoc) {
+                        setExamType('THPT');
+                        // Nếu giáo viên có MonHoc thì ưu tiên dùng MonHoc của giáo viên, ngược lại dùng của đề thi
+                        const savedUser = localStorage.getItem('user');
+                        const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+                        setSubject(parsedUser?.MonHoc || data.MonHoc);
+                    } else {
+                        setExamType('DGNL');
+                        setSubject('');
+                    }
+                    
                     if (data.DanhSachCauHoi) {
                         setAddedQuestions(data.DanhSachCauHoi.map(q => typeof q === 'object' ? q._id : q));
                     }
@@ -89,12 +117,27 @@ const ThemDeThi = () => {
         fetchOldData();
     }, [editId, isEditMode, navigate]);
 
-    // FETCH GỢI Ý CÂU HỎI
+    // Khi chuyển sang THPT, nếu user có MonHoc thì tự động set lại
     useEffect(() => {
+        if (examType === 'THPT' && user?.MonHoc) {
+            setSubject(user.MonHoc);
+        }
+    }, [examType, user]);
+
+    useEffect(() => {
+        if (examType === 'THPT' && !subject) {
+            setQuestionOptions([]);
+            return;
+        }
+
         const fetchQuestions = async () => {
             setIsLoadingQuestions(true);
             try {
-                const res = await fetchClient('/api/cauhoi?limit=500');
+                let url = '/api/cauhoi?limit=500';
+                if (examType === 'THPT') {
+                    url += `&subject=${encodeURIComponent(subject)}`;
+                }
+                const res = await fetchClient(url);
                 if (res.ok) {
                     const json = await res.json();
                     const qList = Array.isArray(json) ? json : (json.data || []);
@@ -106,7 +149,7 @@ const ThemDeThi = () => {
             } catch (error) { console.error(error); } finally { setIsLoadingQuestions(false); }
         };
         fetchQuestions();
-    }, []);
+    }, [examType, subject]);
 
     const handleCreateTag = (inputValue) => {
         const newOption = { value: inputValue, label: inputValue, isNew: true };
@@ -142,7 +185,9 @@ const ThemDeThi = () => {
 
     const triggerSaveExam = (e) => {
         e.preventDefault();
+        if (examType === 'THPT' && !subject) return alert("Vui lòng chọn môn học cho đề thi THPT!");
         if (addedQuestions.length === 0) return alert("Vui lòng thêm ít nhất 1 câu hỏi!");
+        
         setConfirmModal({
             isOpen: true, message: isEditMode ? "Cập nhật đề thi?" : "Tạo mới đề thi?", type: 'primary', actionType: 'SAVE'
         });
@@ -166,7 +211,6 @@ const ThemDeThi = () => {
     const handleFinalSubmit = async () => {
         setIsSubmitting(true);
         try {
-            // Xử lý tạo nhãn mới trước
             const existingTagIds = selectedTags.filter(tag => !tag.isNew).map(tag => tag.value);
             const tagsToCreate = selectedTags.filter(tag => tag.isNew);
             let newTagIds = [];
@@ -183,13 +227,9 @@ const ThemDeThi = () => {
                 ThoiGianGioiHan: Number(timeLimit),
                 TrangThai: "Đang kiểm duyệt",
                 DanhSachCauHoi: addedQuestions,
-                DanhSachNhanDan: [...existingTagIds, ...newTagIds]
+                DanhSachNhanDan: [...existingTagIds, ...newTagIds],
+                MonHoc: examType === 'THPT' ? subject : ""
             };
-
-            if (!isEditMode) {
-                payload.MaGVThietKe = user?._id;
-                payload.MonHoc = user?.MonHoc;
-            }
 
             const url = isEditMode ? `/api/dethithu/${editId}` : '/api/dethithu';
             const method = isEditMode ? 'PUT' : 'POST';
@@ -203,7 +243,6 @@ const ThemDeThi = () => {
     };
 
     const getQuestionInfo = (qId) => (questionOptions.find(opt => opt.value === qId)?.label || `Mã ID: ${qId}`);
-    const formatTeacherId = (id) => id ? `${id.substring(0, 6)}***${id.substring(id.length - 6)}` : "..........";
 
     if (isLoadingData) return <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>;
 
@@ -216,15 +255,28 @@ const ThemDeThi = () => {
                     <div className="card shadow-sm border-0 mb-4 mt-3">
                         <div className="card-body p-4">
                             <h5 className="mb-4 fw-bold border-bottom pb-2">Thông tin cơ bản</h5>
+                            
                             <div className="row mb-4 g-3">
-                                <div className="col-md-6">
-                                    <label className="form-label fw-bold text-muted small">Giáo viên thiết kế</label>
-                                    <div className="form-control bg-light">{user?.HoTen}</div>
+                                <div className="col-12 mb-2">
+                                    <label className="form-label fw-bold small">Cấu trúc đề thi <span className="text-danger">*</span></label>
+                                    <div className="d-flex gap-4">
+                                        <div className="form-check">
+                                            <input className="form-check-input" type="radio" name="examType" id="typeTHPT" 
+                                                checked={examType === 'THPT'} onChange={() => setExamType('THPT')} />
+                                            <label className="form-check-label fw-bold text-dark" htmlFor="typeTHPT">
+                                                Thi THPT Quốc gia (Theo môn)
+                                            </label>
+                                        </div>
+                                        <div className="form-check">
+                                            <input className="form-check-input" type="radio" name="examType" id="typeDGNL" 
+                                                checked={examType === 'DGNL'} onChange={() => setExamType('DGNL')} />
+                                            <label className="form-check-label fw-bold text-dark" htmlFor="typeDGNL">
+                                                Đánh giá năng lực (Tổng hợp)
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-bold text-muted small">Môn học phụ trách</label>
-                                    <div className="form-control bg-light">{user?.MonHoc}</div>
-                                </div>
+
                                 <div className="col-md-8">
                                     <label className="form-label fw-bold small">Tên đề thi <span className="text-danger">*</span></label>
                                     <input type="text" className="form-control" placeholder="Nhập tên đề thi..." value={examName} onChange={(e) => setExamName(e.target.value)} required />
@@ -233,7 +285,37 @@ const ThemDeThi = () => {
                                     <label className="form-label fw-bold small">Thời gian (Phút) <span className="text-danger">*</span></label>
                                     <input type="number" className="form-control" value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} min="1" required />
                                 </div>
-                                <div className="col-12 mt-3">
+
+                                {examType === 'THPT' && (
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold small">
+                                            Môn học <span className="text-danger">*</span>
+                                            {isSubjectLocked && (
+                                                <span className="ms-2 badge bg-secondary fw-normal">
+                                                    <i className="bi bi-lock-fill me-1"></i>Khóa theo phân công
+                                                </span>
+                                            )}
+                                        </label>
+                                        <select
+                                            className="form-select"
+                                            value={subject}
+                                            onChange={(e) => setSubject(e.target.value)}
+                                            required
+                                            disabled={isSubjectLocked}
+                                        >
+                                            <option value="">-- Vui lòng chọn môn học --</option>
+                                            {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                        {isSubjectLocked && (
+                                            <div className="form-text text-muted">
+                                                <i className="bi bi-info-circle me-1"></i>
+                                                Môn học được khóa theo môn phụ trách của giáo viên.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                <div className={examType === 'THPT' ? 'col-md-6' : 'col-12'}>
                                     <label className="form-label fw-bold small">Nhãn dán (Tags)</label>
                                     <CreatableSelect
                                         isMulti
@@ -251,30 +333,45 @@ const ThemDeThi = () => {
 
                     <div className="card shadow-sm border-0 mb-4">
                         <div className="card-body p-4">
-                            <div className="row g-3">
-                                <div className="col-md-6">
-                                    <label className="form-label fw-bold small">Thêm câu hỏi lẻ</label>
-                                    <div className="d-flex gap-2">
-                                        <div style={{ flex: 1 }}>
-                                            <Select options={questionOptions} value={selectedQuestion} onChange={setSelectedQuestion} isLoading={isLoadingQuestions} placeholder="Tìm câu hỏi..." isClearable />
+                            <h5 className="mb-4 fw-bold border-bottom pb-2">Ngân hàng câu hỏi</h5>
+                            {examType === 'THPT' && !subject ? (
+                                <div className="alert alert-warning border-warning">
+                                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                                    Vui lòng <strong>chọn Môn học</strong> ở phía trên để hệ thống nạp các câu hỏi tương ứng.
+                                </div>
+                            ) : (
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold small">Tìm & thêm câu hỏi lẻ</label>
+                                        <div className="d-flex gap-2">
+                                            <div style={{ flex: 1 }}>
+                                                <Select 
+                                                    options={questionOptions} 
+                                                    value={selectedQuestion} 
+                                                    onChange={setSelectedQuestion} 
+                                                    isLoading={isLoadingQuestions} 
+                                                    placeholder="Gõ từ khóa để tìm câu hỏi..." 
+                                                    isClearable 
+                                                />
+                                            </div>
+                                            <button type="button" className="btn btn-outline-primary fw-bold" onClick={handleAddSingle} disabled={!selectedQuestion}>Thêm</button>
                                         </div>
-                                        <button type="button" className="btn btn-outline-primary fw-bold" onClick={handleAddSingle} disabled={!selectedQuestion}>Thêm</button>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold small">Nhập hàng loạt mã ID (Cách nhau bằng phẩy)</label>
+                                        <div className="d-flex gap-2">
+                                            <input className="form-control shadow-none" placeholder="Ví dụ: 64b2c1..., 64b2c2..." value={bulkQuestions} onChange={(e) => setBulkQuestions(e.target.value)} />
+                                            <button type="button" className="btn btn-outline-primary fw-bold text-nowrap" onClick={handleAddBulk}>Thêm nhanh</button>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-bold small">Nhập hàng loạt mã ID</label>
-                                    <div className="d-flex gap-2">
-                                        <input className="form-control shadow-none" placeholder="Dán các mã ID..." value={bulkQuestions} onChange={(e) => setBulkQuestions(e.target.value)} />
-                                        <button type="button" className="btn btn-outline-primary fw-bold text-nowrap" onClick={handleAddBulk}>Thêm nhanh</button>
-                                    </div>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
                     <div className="card shadow-sm border-0 mb-4">
                         <div className="card-body p-4">
-                            <h5 className="mb-3 fw-bold">Danh sách câu hỏi ({addedQuestions.length})</h5>
+                            <h5 className="mb-3 fw-bold">Danh sách câu hỏi đã được đưa vào đề ({addedQuestions.length})</h5>
                             {addedQuestions.length > 0 ? (
                                 <>
                                     <div className="table-responsive border rounded overflow-auto" style={{ maxHeight: '400px' }}>
@@ -306,7 +403,7 @@ const ThemDeThi = () => {
                                     </button>
                                 </>
                             ) : (
-                                <div className="text-center py-4 border rounded bg-light text-muted">Chưa có câu hỏi nào.</div>
+                                <div className="text-center py-4 border rounded bg-light text-muted">Đề thi hiện tại đang trống.</div>
                             )}
                         </div>
                     </div>
@@ -314,7 +411,7 @@ const ThemDeThi = () => {
                     <div className="text-end mb-5">
                         <Link to="/phong-luyen" className="btn btn-light btn-lg px-4 me-3 border shadow-sm">Hủy bỏ</Link>
                         <button type="submit" className="btn btn-primary btn-lg px-5 shadow fw-bold" disabled={isSubmitting || isLoadingTags}>
-                            {isSubmitting ? "Đang xử lý..." : (isEditMode ? "Cập nhật đề thi" : "Tạo đề thi")}
+                            {isSubmitting ? "Đang xử lý..." : (isEditMode ? "Lưu thay đổi" : "Khởi tạo đề thi")}
                         </button>
                     </div>
                 </form>

@@ -26,11 +26,10 @@ const ThuVien = () => {
 
   const [danhSachNhanDan, setDanhSachNhanDan] = useState([]);
 
-  // === STATE QUẢN LÝ OVERLAY XÁC NHẬN ===
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     id: null,
-    itemType: null, // 'tailieu' hoặc 'cauhoi'
+    itemType: null,
     message: '',
   });
 
@@ -135,9 +134,6 @@ const ThuVien = () => {
     fetchLibraryData();
   }, [fetchLibraryData]);
 
-  // --- LOGIC ĐIỀU PHỐI QUA MODAL ---
-  
-  // Bước 1: Kích hoạt Modal
   const triggerDeleteItem = (id, type, name) => {
     setConfirmModal({
         isOpen: true,
@@ -147,10 +143,9 @@ const ThuVien = () => {
     });
   };
 
-  // Bước 2: Thực thi sau khi xác nhận
   const executeDeleteItem = async () => {
     const { id, itemType } = confirmModal;
-    setConfirmModal({ ...confirmModal, isOpen: false }); // Đóng modal
+    setConfirmModal({ ...confirmModal, isOpen: false });
 
     const endpoint = itemType === 'tailieu' ? 'tailieuhoctap' : 'cauhoi';
     try {
@@ -172,6 +167,16 @@ const ThuVien = () => {
 
   const handleFilterChange = (setter, value) => {
     setter(value);
+    setCurrentPage(1);
+  };
+
+  // Reset các bộ lọc phụ khi đổi phân loại
+  const handleFilterTypeChange = (value) => {
+    setFilterType(value);
+    setFilterFormat('Tất cả');
+    setFilterTag('Tất cả');
+    setFilterQuestionType('Tất cả');
+    setFilterDifficulty('Tất cả');
     setCurrentPage(1);
   };
 
@@ -197,6 +202,9 @@ const ThuVien = () => {
     if (status === 'Đã từ chối' || status === 'Từ chối') return 'bg-danger text-white';
     return 'bg-warning text-dark';
   };
+
+  const showTaiLieuFilters = filterType === 'Tài liệu';
+  const showCauHoiFilters = filterType === 'Câu hỏi';
 
   return (
     <>
@@ -230,7 +238,7 @@ const ThuVien = () => {
 
             <div className="row g-2">
               <div className="col-6 col-md-4 col-lg-2">
-                <select className={`form-select shadow-none ${styles.filterControl}`} value={filterType} onChange={(e) => handleFilterChange(setFilterType, e.target.value)}>
+                <select className={`form-select shadow-none ${styles.filterControl}`} value={filterType} onChange={(e) => handleFilterTypeChange(e.target.value)}>
                   <option value="Tất cả">Phân loại: Tất cả</option>
                   <option value="Tài liệu">Chỉ Tài liệu</option>
                   <option value="Câu hỏi">Chỉ Câu hỏi</option>
@@ -248,7 +256,7 @@ const ThuVien = () => {
                 </div>
               )}
 
-              {(filterType === 'Tất cả' || filterType === 'Tài liệu') && (
+              {showTaiLieuFilters && (
                 <>
                   <div className="col-6 col-md-4 col-lg-2">
                     <select className={`form-select shadow-none ${styles.filterControl}`} value={filterFormat} onChange={(e) => handleFilterChange(setFilterFormat, e.target.value)}>
@@ -268,7 +276,7 @@ const ThuVien = () => {
                 </>
               )}
 
-              {(filterType === 'Tất cả' || filterType === 'Câu hỏi') && (
+              {showCauHoiFilters && (
                 <>
                   <div className="col-6 col-md-4 col-lg-2">
                     <select className={`form-select shadow-none ${styles.filterControl}`} value={filterQuestionType} onChange={(e) => handleFilterChange(setFilterQuestionType, e.target.value)}>
@@ -328,13 +336,11 @@ const ThuVien = () => {
                                   <button className="btn btn-outline-primary flex-grow-1 fw-bold" onClick={() => navigate(`/thu-vien/tai-lieu/${item._id}`)}>
                                     Xem chi tiết
                                   </button>
-
                                   {currentUserId === (item.MaGVDangTai?._id || item.MaGVDangTai) && (
                                     <>
                                       <button className="btn btn-outline-dark px-3" onClick={() => navigate(`/them-tai-lieu?edit=${item._id}`)} title="Sửa tài liệu">
                                         <i className="bi bi-pencil-square"></i>
                                       </button>
-                                      {/* CẬP NHẬT: Gọi hàm mở Modal */}
                                       <button className="btn btn-outline-danger px-3" onClick={() => triggerDeleteItem(item._id, 'tailieu', item.TenTaiLieu)} title="Xóa tài liệu">
                                         <i className="bi bi-trash3-fill"></i>
                                       </button>
@@ -362,13 +368,11 @@ const ThuVien = () => {
                                   <button className="btn btn-outline-success flex-grow-1 fw-bold" onClick={() => navigate(`/thu-vien/cau-hoi/${item._id}`)}>
                                     Xem chi tiết
                                   </button>
-
                                   {currentUserId === (item.MaGVBienSoan?._id || item.MaGVBienSoan) && (
                                     <>
                                       <button className="btn btn-outline-dark px-3" onClick={() => navigate(`/them-cau-hoi?edit=${item._id}`)} title="Sửa câu hỏi">
                                         <i className="bi bi-pencil-square"></i>
                                       </button>
-                                      {/* CẬP NHẬT: Gọi hàm mở Modal */}
                                       <button className="btn btn-outline-danger px-3" onClick={() => triggerDeleteItem(item._id, 'cauhoi', item.NoiDungCauHoi)} title="Xóa câu hỏi">
                                         <i className="bi bi-trash3-fill"></i>
                                       </button>
@@ -414,7 +418,6 @@ const ThuVien = () => {
         </section>
       </main>
 
-      {/* === GIAO DIỆN OVERLAY (MODAL) XÁC NHẬN XÓA === */}
       {confirmModal.isOpen && (
           <div 
               className="d-flex align-items-center justify-content-center" 

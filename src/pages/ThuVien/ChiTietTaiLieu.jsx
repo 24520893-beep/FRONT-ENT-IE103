@@ -100,16 +100,16 @@ const ChiTietTaiLieu = () => {
                             <div className={`card-body p-0 bg-light`}>
                                 {isPDF ? (
                                     /* DÙNG THẺ OBJECT NATIVE CỦA TRÌNH DUYỆT - Sạch sẽ và mượt nhất */
-                                    <object 
-                                        data={`${documentData.DuongDan}#toolbar=0`} 
+                                    <object
+                                        data={`${documentData.DuongDan}#toolbar=0`}
                                         type="application/pdf"
                                         className="w-100 border-0"
                                         style={{ minHeight: '80vh', display: 'block' }}
                                     >
                                         <div className="p-5 text-center">
                                             <p>Trình duyệt của bạn không hỗ trợ xem trực tiếp PDF.</p>
-                                            <button 
-                                                onClick={() => handleDownload(documentData.DuongDan, `${documentData.TenTaiLieu}.pdf`)} 
+                                            <button
+                                                onClick={() => handleDownload(documentData.DuongDan, `${documentData.TenTaiLieu}.pdf`)}
                                                 className="btn btn-primary"
                                             >
                                                 Tải file về máy để xem
@@ -159,7 +159,9 @@ const ChiTietTaiLieu = () => {
                             <div className="info-list mt-3">
                                 <div className="mb-3">
                                     <label className="text-muted small d-block">Môn học</label>
-                                    <span className="fw-bold text-main-orange fs-5">{documentData.MonHoc}</span>
+                                    <span className="fw-bold text-main-orange fs-5">
+                                        {documentData.MonHoc || "Đánh giá năng lực (Tổng hợp)"}
+                                    </span>
                                 </div>
 
                                 <div className="mb-3">

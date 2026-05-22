@@ -32,7 +32,8 @@ const QuanLyLoTrinh = () => {
                 page: currentPage,
                 limit: itemsPerPage, 
                 search: searchTerm,
-                status: activeTab 
+                status: activeTab,
+                scope: 'moderation',
             });
 
             const response = await fetchClient(`/api/lotrinhhoctap?${params}`);
