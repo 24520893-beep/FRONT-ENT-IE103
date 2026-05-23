@@ -345,7 +345,7 @@ const ChiTietCauHoi = () => {
                             <div className="mb-3">
                                 <label className="text-muted small d-block">Môn học</label>
                                 <span className="fw-bold text-main-orange fs-5">
-                                    {documentData.MonHoc || "Đánh giá năng lực (Tổng hợp)"}
+                                    {question.MonHoc || "Đánh giá năng lực (Tổng hợp)"}
                                 </span>
                             </div>
                             <div className="mb-3"><label className="text-muted small d-block">Chuyên đề</label><span className="fw-medium text-dark">{question.ChuyenDe || 'Đang cập nhật'}</span></div>
