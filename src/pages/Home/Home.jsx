@@ -2,18 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './Home.module.css';
 
-// 1. IMPORT WIDGET NHIỆM VỤ HÔM NAY
+// IMPORT fetchClient ĐỂ GỌI API CÓ XÁC THỰC TOKEN
+import { fetchClient } from '../../utils/fetchClient';
+
+// IMPORT WIDGET NHIỆM VỤ HÔM NAY
 import NhiemVuHomNay from '../../components/NhiemVuHomNay';
 
 export default function Home() {
   const carouselRef = useRef(null);
   const [userRole, setUserRole] = useState(null);
   
-  // STATE LƯU TRỮ LỘ TRÌNH
+  // STATE LƯU TRỮ LỘ TRÌNH TIÊU BIỂU (PUBLIC)
   const [featuredRoadmaps, setFeaturedRoadmaps] = useState([]);
   const [isLoadingRoadmaps, setIsLoadingRoadmaps] = useState(true);
 
-  // Lấy vai trò người dùng khi trang web được nạp
+  // THÊM MỚI: STATE LƯU TRỮ NHIỆM VỤ HÔM NAY (CÁ NHÂN HÓA CHO HỌC SINH)
+  const [todayTasks, setTodayTasks] = useState([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+
+  // 1. Lấy vai trò người dùng khi trang web được nạp
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -25,17 +32,38 @@ export default function Home() {
     }
   }, []);
 
-  // LẤY DANH SÁCH LỘ TRÌNH TỪ API PUBLIC RIÊNG BIỆT
+  // 2. TỰ ĐỘNG LẤY NHIỆM VỤ HÔM NAY NẾU LÀ HỌC SINH
+  useEffect(() => {
+    const fetchTodayTasks = async () => {
+      // Chỉ lấy nếu đã xác định được vai trò là Học sinh
+      if (userRole !== 'HocSinh') return; 
+
+      setIsLoadingTasks(true);
+      try {
+        // Dùng fetchClient để tự động đính kèm Token xác thực
+        const response = await fetchClient('/api/lotrinhhoctap/nhiemvu-homnay');
+        if (response.ok) {
+          const resData = await response.json();
+          setTodayTasks(resData.data || []);
+        }
+      } catch (error) {
+        console.error("Lỗi lấy nhiệm vụ hôm nay:", error);
+      } finally {
+        setIsLoadingTasks(false);
+      }
+    };
+
+    fetchTodayTasks();
+  }, [userRole]); // Dependency là userRole, sẽ tự chạy ngay khi biết là Học sinh
+
+  // 3. LẤY DANH SÁCH LỘ TRÌNH TỪ API PUBLIC RIÊNG BIỆT (Cho tất cả mọi người xem)
   useEffect(() => {
     const fetchRoadmaps = async () => {
       try {
-        // Dùng fetch thuần gọi API Public vừa tạo (không cần token, tự tin lấy 8 lộ trình)
         const response = await fetch('/api/lotrinhhoctap/public/featured?limit=8');
-        
         if (response.ok) {
           const resData = await response.json();
           const dataArray = Array.isArray(resData) ? resData : (resData.data || []);
-          
           setFeaturedRoadmaps(dataArray);
         }
       } catch (error) {
@@ -217,8 +245,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CHÈN WIDGET NHIỆM VỤ HÔM NAY (CHỈ HỌC SINH ĐĂNG NHẬP MỚI NHÌN THẤY) */}
-      {userRole === 'HocSinh' && <NhiemVuHomNay />}
+      {/* TẦNG MỚI: CHÈN WIDGET VÀ TRUYỀN DỮ LIỆU NHIỆM VỤ HÔM NAY VÀO */}
+      {userRole === 'HocSinh' && (
+        <NhiemVuHomNay tasks={todayTasks} isLoading={isLoadingTasks} />
+      )}
 
       {/* TẦNG 2: DANH SÁCH LỘ TRÌNH TỪ DATABASE */}
       <div className="container mt-5 mb-5">
