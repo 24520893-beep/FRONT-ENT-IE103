@@ -1,7 +1,7 @@
 // src/utils/fetchClient.js - FIX: Tách xử lý 401 và 403
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-// const BASE_URL = 'http://localhost:3000'; // chạy và test nhanh
+// const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const BASE_URL = 'http://localhost:3000'; // chạy và test nhanh
 
 export const fetchClient = async (url, options = {}) => {
     const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`;

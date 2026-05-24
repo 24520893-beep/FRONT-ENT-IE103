@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './DangNhap.module.css';
-import { fetchClient } from '../../utils/fetchClient'; // Bổ sung import fetchClient
+import { fetchClient } from '../../utils/fetchClient';
 
 const DangKy = () => {
   const navigate = useNavigate();
@@ -50,7 +50,6 @@ const DangKy = () => {
         TruongKyVong: truongKyVong
       };
 
-      // Đã sửa: Dùng fetchClient, tự động cấu hình URL và Headers
       const response = await fetchClient('/api/nguoidung/sign-up', {
         method: 'POST',
         body: JSON.stringify(payload)
@@ -58,7 +57,7 @@ const DangKy = () => {
 
       if (response.ok) {
         alert("Đăng ký thành công! Hãy đăng nhập để bắt đầu học tập.");
-        navigate('/dang-nhap'); // Chuyển hướng sang trang đăng nhập
+        navigate('/dang-nhap');
       } else {
         const errorData = await response.json();
         setErrorMessage(errorData.message || 'Email này có thể đã được sử dụng.');
@@ -96,7 +95,7 @@ const DangKy = () => {
                         <input 
                           type="text" 
                           className="form-control" 
-                          placeholder="Nhập họ tên đầy đủ" 
+                          placeholder="Họ và tên của bạn" 
                           required 
                           value={hoTen}
                           onChange={(e) => setHoTen(e.target.value)}
@@ -112,12 +111,13 @@ const DangKy = () => {
                         <input 
                           type="email" 
                           className="form-control" 
-                          placeholder="Ví dụ: hocsinh@gmail.com" 
+                          placeholder="Email đăng nhập" 
                           required 
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                         />
                       </div>
+                      <div className="form-text text-muted" style={{ fontSize: '0.8rem' }}>Ví dụ: hocsinh@gmail.com</div>
                     </div>
                   </div>
 
@@ -131,13 +131,14 @@ const DangKy = () => {
                         <input 
                           type="password" 
                           className="form-control" 
-                          placeholder="Từ 6 ký tự" 
+                          placeholder="Mật khẩu của bạn" 
                           required 
                           minLength="6"
                           value={matKhau}
                           onChange={(e) => setMatKhau(e.target.value)}
                         />
                       </div>
+                      <div className="form-text text-muted" style={{ fontSize: '0.8rem' }}>Mật khẩu phải chứa ít nhất 6 ký tự.</div>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label fw-medium small">Xác nhận mật khẩu <span className="text-danger">*</span></label>
@@ -148,7 +149,7 @@ const DangKy = () => {
                         <input 
                           type="password" 
                           className="form-control" 
-                          placeholder="Nhập lại mật khẩu" 
+                          placeholder="Xác nhận lại mật khẩu" 
                           required 
                           value={xacNhanMatKhau}
                           onChange={(e) => setXacNhanMatKhau(e.target.value)}
@@ -184,7 +185,7 @@ const DangKy = () => {
                         <input 
                           type="number" 
                           className="form-control" 
-                          placeholder="VD: 26.5" 
+                          placeholder="Mục tiêu điểm" 
                           step="0.1"
                           min="0"
                           max="30"
@@ -193,6 +194,7 @@ const DangKy = () => {
                         />
                         <span className="input-group-text bg-light text-muted">Điểm</span>
                       </div>
+                      <div className="form-text text-muted" style={{ fontSize: '0.8rem' }}>Ví dụ: 26.5</div>
                     </div>
 
                     <div className="col-md-4">
@@ -201,11 +203,12 @@ const DangKy = () => {
                         <input 
                           type="text" 
                           className="form-control" 
-                          placeholder="VD: Đại học Bách Khoa..." 
+                          placeholder="Tên trường đại học" 
                           value={truongKyVong}
                           onChange={(e) => setTruongKyVong(e.target.value)}
                         />
                       </div>
+                      <div className="form-text text-muted" style={{ fontSize: '0.8rem' }}>Ví dụ: Đại học Bách Khoa TP.HCM</div>
                     </div>
                   </div>
 
