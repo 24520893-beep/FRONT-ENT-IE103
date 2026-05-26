@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import styles from './PhongLuyen.module.css';
 import { fetchClient } from '../../utils/fetchClient';
+
+const SUBJECTS = [
+  "Ngữ văn", "Toán học", "Vật lí", "Hóa học", "Sinh học",
+  "Lịch sử", "Địa lí", "Giáo dục kinh tế và pháp luật",
+  "Tin học", "Công nghệ Công nghiệp", "Công nghệ Nông nghiệp",
+  "Tiếng Anh", "Tiếng Nga", "Tiếng Pháp", "Tiếng Trung Quốc",
+  "Tiếng Đức", "Tiếng Nhật", "Tiếng Hàn"
+];
 
 const PhongLuyen = () => {
   const navigate = useNavigate();
@@ -16,7 +24,8 @@ const PhongLuyen = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const examsPerPage = 12;
   const [searchTerm, setSearchTerm] = useState('');
-  
+
+  const location = useLocation();
   // BỘ LỌC MỚI
   const [filterExamType, setFilterExamType] = useState('Tất cả');
   const [selectedSubject, setSelectedSubject] = useState('Tất cả');
@@ -37,7 +46,7 @@ const PhongLuyen = () => {
         limit: examsPerPage,
         search: searchTerm,
       });
-      
+
       if (filterExamType !== 'Tất cả') queryParams.append('examType', filterExamType);
       if (selectedSubject !== 'Tất cả' && filterExamType !== 'DGNL') queryParams.append('subject', selectedSubject);
       if (filterStatus !== 'Tất cả') queryParams.append('status', filterStatus);
@@ -56,6 +65,14 @@ const PhongLuyen = () => {
       setIsLoading(false);
     }
   }, [currentPage, searchTerm, filterExamType, selectedSubject, filterStatus]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const subjectParam = params.get('subject');
+    if (subjectParam) {
+      setSelectedSubject(subjectParam);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -88,8 +105,8 @@ const PhongLuyen = () => {
         const errorData = await response.json();
         alert(`Lỗi: ${errorData.message || 'Không thể xóa đề thi'}`);
       }
-    } catch (error) { 
-      console.error("Lỗi khi xóa đề thi:", error); 
+    } catch (error) {
+      console.error("Lỗi khi xóa đề thi:", error);
     }
   };
 
@@ -120,7 +137,7 @@ const PhongLuyen = () => {
   const getStatusBadge = (status) => {
     if (status === 'Đã xuất bản' || status === 'Hoàn thiện') return 'bg-success text-white';
     if (status === 'Đã từ chối' || status === 'Từ chối') return 'bg-danger text-white';
-    return 'bg-warning text-dark'; 
+    return 'bg-warning text-dark';
   };
 
   return (
@@ -133,10 +150,10 @@ const PhongLuyen = () => {
                 <h2 className="fw-bold mb-0">Phòng Luyện Thi</h2>
                 <p className="text-muted mb-0 mt-2 fs-6">Hệ thống đề thi THPT Quốc gia & ĐGNL bám sát cấu trúc mới.</p>
               </div>
-              
+
               {(userRole === 'GiaoVien' || userRole === 'QuanTriVien') && (
                 <div className="col-md-4 text-md-end mt-3 mt-md-0">
-                  <button 
+                  <button
                     className="btn btn-main-orange text-white fw-bold shadow-sm"
                     onClick={() => navigate('/them-de-thi')}
                   >
@@ -158,33 +175,28 @@ const PhongLuyen = () => {
 
               {/* BỘ LỌC MÔN HỌC (Ẩn đi nếu đang chọn ĐGNL) */}
               <div className="col-12 col-md-2">
-                <select 
-                  className={`form-select shadow-none ${styles.filterControl}`} 
-                  value={selectedSubject} 
+                <select
+                  className={`form-select shadow-none ${styles.filterControl}`}
+                  value={selectedSubject}
                   onChange={(e) => handleFilterChange(setSelectedSubject, e.target.value)}
                   disabled={filterExamType === 'DGNL'}
                 >
                   <option value="Tất cả">Môn thi: Tất cả</option>
-                  <option value="Toán học">Toán học</option>
-                  <option value="Vật lý">Vật lý</option>
-                  <option value="Hóa học">Hóa học</option>
-                  <option value="Ngữ văn">Ngữ văn</option>
-                  <option value="Địa lý">Địa lý</option>
-                  <option value="Lịch sử">Lịch sử</option>
-                  <option value="Sinh học">Sinh học</option>
-                  <option value="Tiếng Anh">Tiếng Anh</option>
+                  {SUBJECTS.map((subject) => (
+                    <option key={subject} value={subject}>{subject}</option>
+                  ))}
                 </select>
               </div>
 
               {(userRole === 'GiaoVien' || userRole === 'QuanTriVien') && (
-                  <div className="col-12 col-md-3">
-                    <select className={`form-select shadow-none ${styles.filterControl}`} value={filterStatus} onChange={(e) => handleFilterChange(setFilterStatus, e.target.value)}>
-                      <option value="Tất cả">Trạng thái: Tất cả</option>
-                      <option value="Hoàn thiện">Đã xuất bản / Hoàn thiện</option>
-                      <option value="Đang kiểm duyệt">Đang kiểm duyệt</option>
-                      <option value="Từ chối">Bị từ chối</option>
-                    </select>
-                  </div>
+                <div className="col-12 col-md-3">
+                  <select className={`form-select shadow-none ${styles.filterControl}`} value={filterStatus} onChange={(e) => handleFilterChange(setFilterStatus, e.target.value)}>
+                    <option value="Tất cả">Trạng thái: Tất cả</option>
+                    <option value="Hoàn thiện">Đã xuất bản / Hoàn thiện</option>
+                    <option value="Đang kiểm duyệt">Đang kiểm duyệt</option>
+                    <option value="Từ chối">Bị từ chối</option>
+                  </select>
+                </div>
               )}
 
               <div className={`col-12 ${userRole === 'GiaoVien' || userRole === 'QuanTriVien' ? 'col-md-5' : 'col-md-8'}`}>
@@ -212,7 +224,7 @@ const PhongLuyen = () => {
                       <div key={exam._id} className="col-12 col-md-6 col-xl-4 d-flex">
                         <div className={`card w-100 border-0 shadow-sm ${styles.examCard}`}>
                           <div className="card-body p-4 d-flex flex-column">
-                            
+
                             <div className="d-flex align-items-center justify-content-between mb-3">
                               {/* XỬ LÝ HIỂN THỊ DGNL NẾU KHÔNG CÓ MÔN HỌC */}
                               <span className={`badge px-3 py-2 fw-bold ${exam.MonHoc ? 'bg-main-orange' : 'bg-primary'}`}>
@@ -220,7 +232,7 @@ const PhongLuyen = () => {
                               </span>
 
                               {(userRole === 'GiaoVien' || userRole === 'QuanTriVien') && exam.TrangThai && (
-                                  <span className={`badge border ${getStatusBadge(exam.TrangThai)}`}>{exam.TrangThai}</span>
+                                <span className={`badge border ${getStatusBadge(exam.TrangThai)}`}>{exam.TrangThai}</span>
                               )}
                             </div>
 
@@ -246,7 +258,7 @@ const PhongLuyen = () => {
                             </div>
 
                             <hr className="my-0 mb-3 opacity-10" />
-                            
+
                             <div className="d-flex gap-2">
                               <Link to={`/phong-luyen/${exam._id}`} className="btn btn-outline-main-orange flex-grow-1 fw-bold">
                                 {userRole === 'HocSinh' ? 'Vào thi ngay' : 'Xem chi tiết'}
@@ -254,14 +266,14 @@ const PhongLuyen = () => {
 
                               {currentUserId === (exam.MaGVThietKe?._id || exam.MaGVThietKe) && (
                                 <>
-                                  <button 
+                                  <button
                                     className="btn btn-outline-dark px-3 flex-shrink-0"
                                     onClick={() => navigate(`/them-de-thi?edit=${exam._id}`)}
                                     title="Sửa đề thi"
                                   >
                                     <i className="bi bi-pencil-square"></i>
                                   </button>
-                                  <button 
+                                  <button
                                     className="btn btn-outline-danger px-3 flex-shrink-0"
                                     onClick={() => triggerDeleteExam(exam._id)}
                                     title="Xóa đề thi này"
@@ -316,17 +328,17 @@ const PhongLuyen = () => {
 
       {/* MODAL XÓA */}
       {confirmModal.isOpen && (
-          <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10000, backdropFilter: 'blur(3px)' }}>
-              <div className="bg-white p-4 p-md-5 rounded-4 shadow-lg text-center animate__animated animate__zoomIn" style={{ maxWidth: '420px', width: '90%' }}>
-                  <i className="bi bi-exclamation-triangle-fill text-danger" style={{ fontSize: '4rem' }}></i>
-                  <h4 className="fw-bold mt-3 text-dark">Xác nhận xóa</h4>
-                  <p className="text-muted mt-2 fs-6 mb-4">{confirmModal.message}</p>
-                  <div className="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                      <button className="btn btn-light border fw-bold rounded-pill px-4 py-2" onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}>Hủy bỏ</button>
-                      <button className="btn btn-danger fw-bold rounded-pill px-4 py-2 text-white" onClick={executeDeleteExam}>Xác nhận xóa</button>
-                  </div>
-              </div>
+        <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10000, backdropFilter: 'blur(3px)' }}>
+          <div className="bg-white p-4 p-md-5 rounded-4 shadow-lg text-center animate__animated animate__zoomIn" style={{ maxWidth: '420px', width: '90%' }}>
+            <i className="bi bi-exclamation-triangle-fill text-danger" style={{ fontSize: '4rem' }}></i>
+            <h4 className="fw-bold mt-3 text-dark">Xác nhận xóa</h4>
+            <p className="text-muted mt-2 fs-6 mb-4">{confirmModal.message}</p>
+            <div className="d-flex flex-column flex-sm-row justify-content-center gap-3">
+              <button className="btn btn-light border fw-bold rounded-pill px-4 py-2" onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}>Hủy bỏ</button>
+              <button className="btn btn-danger fw-bold rounded-pill px-4 py-2 text-white" onClick={executeDeleteExam}>Xác nhận xóa</button>
+            </div>
           </div>
+        </div>
       )}
     </>
   );

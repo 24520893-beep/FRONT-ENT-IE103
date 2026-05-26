@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styles from './Home.module.css';
 
 // IMPORT fetchClient ĐỂ GỌI API CÓ XÁC THỰC TOKEN
@@ -8,10 +8,31 @@ import { fetchClient } from '../../utils/fetchClient';
 // IMPORT WIDGET NHIỆM VỤ HÔM NAY
 import NhiemVuHomNay from '../../components/NhiemVuHomNay';
 
+const SUBJECTS = [
+  { name: "Toán học", icon: "bi-calculator" },
+  { name: "Ngữ văn", icon: "bi-spellcheck" },
+  { name: "Tiếng Anh", icon: "bi-translate" },
+  { name: "Vật lí", icon: "bi-thermometer-half" },
+  { name: "Hóa học", icon: "bi-droplet-half" },
+  { name: "Sinh học", icon: "bi-bug" },
+  { name: "Lịch sử", icon: "bi-hourglass-split" },
+  { name: "Địa lí", icon: "bi-globe-americas" },
+  { name: "Tin học", icon: "bi-cpu" },
+  { name: "Giáo dục kinh tế và pháp luật", icon: "bi-bank" },
+  { name: "Công nghệ Công nghiệp", icon: "bi-gear" },
+  { name: "Công nghệ Nông nghiệp", icon: "bi-tree" },
+  { name: "Tiếng Nga", icon: "bi-flag" },
+  { name: "Tiếng Pháp", icon: "bi-flag" },
+  { name: "Tiếng Trung Quốc", icon: "bi-flag" },
+  { name: "Tiếng Đức", icon: "bi-flag" },
+  { name: "Tiếng Nhật", icon: "bi-flag" },
+  { name: "Tiếng Hàn", icon: "bi-flag" },
+];
+
 export default function Home() {
   const carouselRef = useRef(null);
   const [userRole, setUserRole] = useState(null);
-  
+
   // STATE LƯU TRỮ LỘ TRÌNH TIÊU BIỂU (PUBLIC)
   const [featuredRoadmaps, setFeaturedRoadmaps] = useState([]);
   const [isLoadingRoadmaps, setIsLoadingRoadmaps] = useState(true);
@@ -36,7 +57,7 @@ export default function Home() {
   useEffect(() => {
     const fetchTodayTasks = async () => {
       // Chỉ lấy nếu đã xác định được vai trò là Học sinh
-      if (userRole !== 'HocSinh') return; 
+      if (userRole !== 'HocSinh') return;
 
       setIsLoadingTasks(true);
       try {
@@ -148,28 +169,21 @@ export default function Home() {
               </div>
 
               <div className="collapse d-md-block" id="collapseSubjects">
-                <ul className="list-unstyled mb-0 bg-white">
-                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
-                    <i className="bi bi-calculator me-3 text-muted"></i>Toán Học
-                  </li>
-                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
-                    <i className="bi bi-spellcheck me-3 text-muted"></i>Ngữ Văn
-                  </li>
-                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
-                    <i className="bi bi-translate me-3 text-muted"></i>Tiếng Anh
-                  </li>
-                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
-                    <i className="bi bi-thermometer-half me-3 text-muted"></i>Vật Lý
-                  </li>
-                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
-                    <i className="bi bi-droplet-half me-3 text-muted"></i>Hóa Học
-                  </li>
-                  <li className="text-dark py-2 px-3 border-bottom" style={{ cursor: 'default' }}>
-                    <i className="bi bi-bug me-3 text-muted"></i>Sinh Học
-                  </li>
-                  <li className="text-dark py-2 px-3" style={{ cursor: 'default' }}>
-                    <i className="bi bi-globe-americas me-3 text-muted"></i>Lịch Sử - Địa Lý
-                  </li>
+                <ul className="list-unstyled mb-0 bg-white" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                  {SUBJECTS.map((subject, idx) => (
+                    <li key={idx} className={idx < SUBJECTS.length - 1 ? "border-bottom" : ""}>
+                      <Link
+                        to={`/phong-luyen?subject=${encodeURIComponent(subject.name)}`}
+                        className="text-dark py-2 px-3 d-flex align-items-center text-decoration-none"
+                        style={{ transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#fff3e0'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <i className={`bi ${subject.icon} me-3 text-muted`}></i>
+                        <span className="small">{subject.name}</span>
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -273,11 +287,11 @@ export default function Home() {
                 <div key={roadmap._id || index} className="col-12 col-md-6 col-lg-3 d-flex">
                   <div className={`card border-0 shadow-sm w-100 ${styles.hoverCardRoadmap}`}>
                     <div className="position-relative">
-                      <img 
-                        src={imageUrl} 
-                        className={`card-img-top ${styles.roadmapImg}`} 
-                        alt={roadmap.TenLoTrinh} 
-                        style={{ height: '160px', objectFit: 'cover' }} 
+                      <img
+                        src={imageUrl}
+                        className={`card-img-top ${styles.roadmapImg}`}
+                        alt={roadmap.TenLoTrinh}
+                        style={{ height: '160px', objectFit: 'cover' }}
                       />
                       {index < 2 && <span className="badge bg-main-orange position-absolute top-0 start-0 m-2">HOT</span>}
                     </div>
